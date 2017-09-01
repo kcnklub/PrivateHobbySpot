@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "327663049870",
+    "project_id": "privatehobbyspot"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:327663049870:android:116afd86a2c163ae",
+        "android_client_info": {
+          "package_name": "kylem.privatehobbyspot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "327663049870-m60arkrcjn7d0m2rsnol91kqvtds7mtu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kylem.privatehobbyspot",
+            "certificate_hash": "fe236b629830866837a9acbbdaeae03f7633f367"
+          }
+        },
+        {
+          "client_id": "327663049870-7tthr2k87fk3o3k14fcaf4rl6330hugp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBndkIknjBxqeClN-YmINZQQ1HHTfp1pGo"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
