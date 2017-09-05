@@ -1,16 +1,20 @@
 package kylem.privatehobbyspot;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Dialog;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,7 +27,11 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -45,8 +53,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.miguelcatalan.materialsearchview.MaterialSearchView;
+
+import java.net.URL;
 
 import io.realm.Realm;
+import io.realm.RealmList;
+import io.realm.RealmQuery;
+import io.realm.RealmResults;
+import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
@@ -58,8 +73,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private static final long MIN_TIME_BW_UPDATES = 0;
 
-    private int MY_PERMISSIONS_REQUEST_COARSE_LOCATION;
-    private int MY_PERMISSIONS_REQUEST_FINE_LOCATION;
+    private int MY_PERMISSIONS_REQUEST_LOCATION;
     public final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
     private MapFragment mMapFragment;
     private String TAG = "Main Activity";
@@ -80,10 +94,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private FloatingActionMenu floatingActionMenu;
     private FloatingActionButton confirmLocationButton;
     private FloatingActionButton cancelLocationButton;
+    private FloatingActionButton viewSettingsButton;
+    private MaterialSearchView searchView;
 
     private MarkerOptions markerOptions;
     private boolean isAddingLocation;
     private Marker newLocationMarker;
+
+    private String username;
+    private String userEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,18 +110,26 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Material Search");
+        toolbar.setTitleTextColor(Color.parseColor("#FFFFFF"));
 
-
+        searchView = (MaterialSearchView) findViewById(R.id.search_view);
         //Add the map activity fragment to this activity.
+
         mMapFragment = MapFragment.newInstance();
         android.app.FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
         fragmentTransaction.add(R.id.fragment_container, mMapFragment);
         fragmentTransaction.commit();
-        mMapFragment.getMapAsync(this);
+        getInitLocation(getApplicationContext());
+        isAddingLocation = false;
 
         mGoogleApiClient = ((PrivateHobbySpot) getApplication()).getmGoogleApiClient();
-        initCheckLocationPermissions(getApplicationContext());
-        isAddingLocation = false;
+        username = getIntent().getStringExtra("username");
+        userEmail = getIntent().getStringExtra("userEmail");
+        if(username != null){
+            Log.d(TAG, username);
+        }
+
 
         floatingActionMenu = (FloatingActionMenu) findViewById(R.id.fab);
         addLocationButton = (FloatingActionButton) findViewById(R.id.add_location);
@@ -110,32 +137,45 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         signoutButton = (FloatingActionButton) findViewById(R.id.sign_out_button);
         confirmLocationButton = (FloatingActionButton) findViewById(R.id.confirmLocationButton);
         cancelLocationButton = (FloatingActionButton) findViewById(R.id.cancelLocationButton);
+        viewSettingsButton = (FloatingActionButton) findViewById(R.id.view_settings_button);
         setClickListeners();
 
-        //get permission to use the location bases services
+        Intent intent = getIntent();
+        if(Intent.ACTION_SEARCH.equals(intent.getAction())){
+            String query = intent.getStringExtra(SearchManager.QUERY);
 
+        }
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.options_menu, menu);
+
+        MenuItem item = menu.findItem(R.id.action_search);
+
+        // Associate search config with the searchView
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchView.setMenuItem(item);
+
+        return true;
     }
 
     //Permission for stuff and do stuff.
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[],
                                            int grantResults[]){
-        if( requestCode == MY_PERMISSIONS_REQUEST_COARSE_LOCATION ) {
+        Log.d(TAG, "result");
+        if( requestCode == MY_PERMISSIONS_REQUEST_LOCATION ) {
             if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                //do stuff here
+                Log.d(TAG, "we are in");
+                getInitLocation(getApplicationContext());
             } else {
-                // get rekt
+                Toast.makeText(this, "Permissions was not granted", Toast.LENGTH_SHORT).show();
             }
             return;
-        }
-
-        if( requestCode == MY_PERMISSIONS_REQUEST_FINE_LOCATION ) {
-            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // do stuff here
-            } else {
-                // get rekt
-            }
-            return;
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
@@ -202,6 +242,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             mMap.setOnMarkerDragListener(this);
             mMap.setOnMarkerClickListener(this);
         }
+        getUserLocationPings();
 
 
     }
@@ -227,46 +268,56 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         return true;
     }
 
-    public void initCheckLocationPermissions(Context context){
-        if( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            return;
-        }
+    @TargetApi(23)
+    public void getInitLocation(Context context){
+        if( checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "we have permissions right before try block");
+            try {
+                this.mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                this.isGPSEnabled = this.mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                this.isNetworkEnabled = this.mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                if(!isNetworkEnabled && !isGPSEnabled) {
+                    this.locationServiceAvaible = false;
+                    Log.d(TAG, "GPS and network are not avaible");
+                } else {
+                    this.locationServiceAvaible = true;
+                    if(this.isNetworkEnabled){
+                        Log.d(TAG, "Network");
+                        this.mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                                MIN_TIME_BW_UPDATES,
+                                MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
 
-        try {
-            this.mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-            this.isGPSEnabled = mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            this.isNetworkEnabled = mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                        if(this.mLocationManager != null){
+                            userUpdatedLocation = this.mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                            //update coord.
+                        }
+                    }
 
-            if(!isNetworkEnabled && !isGPSEnabled) {
-                this.locationServiceAvaible = false;
-            } else {
-                this.locationServiceAvaible = true;
+                    if(this.isGPSEnabled){
+                        Log.d(TAG, "GPS");
+                        this.mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                                MIN_TIME_BW_UPDATES,
+                                MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
 
-                if(this.isNetworkEnabled){
-                    mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                            MIN_TIME_BW_UPDATES,
-                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-
-                    if(mLocationManager != null){
-                        userUpdatedLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                        //update coord.
+                        if(this.mLocationManager != null){
+                            userUpdatedLocation = this.mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                            //update coord.
+                        }
                     }
                 }
-
-                if(this.isGPSEnabled){
-                    mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                            MIN_TIME_BW_UPDATES,
-                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-
-                    if(mLocationManager != null){
-                        userUpdatedLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        //update coord.
-                    }
-                }
+            } catch (Exception ex){
+                Log.d(TAG, "Error create Location service: " + ex.getMessage());
+            } finally {
+                // had to move the call for the callback into this part of the code
+                // so that the call back would happen after the permissions were accepted or denied
+                // before the OnMapReady was called.
+                mMapFragment.getMapAsync(this);
             }
-        } catch (Exception ex){
-            Log.d(TAG, "Error create Location service: " + ex.getMessage());
+        } else {
+            if( shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)){
+                Toast.makeText(this, "Location is need to show you location pings near you", Toast.LENGTH_SHORT).show();
+            }
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
         }
     }
 
@@ -298,6 +349,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         });
 
         settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        viewSettingsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
@@ -397,5 +456,34 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             AlertDialog dialog = builder.create();
             dialog.show();
         }
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
+    public void getUserLocationPings(){
+        Realm realm = Realm.getDefaultInstance();
+        RealmQuery<User> query = realm.where(User.class);
+        query.equalTo("Email", userEmail);
+        RealmResults<User> user = query.findAll();
+        if(user.size() == 1){
+            User currentUser = user.first();
+            RealmList<LocationPing> userLocations = currentUser.getLocationPings();
+            if(userLocations.size() != 0){
+                for(LocationPing location : userLocations){
+                    mMap.addMarker(new MarkerOptions()
+                            .draggable(false)
+                            .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
+                            .title(location.GetName())
+                    );
+                }
+            }
+        }
+
     }
 }

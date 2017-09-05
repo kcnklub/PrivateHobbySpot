@@ -5,16 +5,28 @@ package kylem.privatehobbyspot.entities;
 
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.annotations.Ignore;
 
 public class LocationPing extends RealmObject {
+
+    @Ignore
+    public static final int LONGBOARDING = 1;
+    @Ignore
+    public static final int HIKING = 2;
+    @Ignore
+    public static final int BIKING = 3;
+    @Ignore
+    public static final int OTHER = -1;
+
 
     private String Name;
     private double Longtitude, Latitude;
     private String Description;
     private int LocationType;
-    private String MarkerID;
-    private int DatabaseID;
     private RealmList<User> usersThatCanViewThisLocationPing;
+
+    @Ignore
+    private int MarkerId;
 
     public LocationPing(){
         Name = null;
@@ -22,8 +34,6 @@ public class LocationPing extends RealmObject {
         Latitude = 0;
         Description = null;
         LocationType = -1;
-        DatabaseID = -1;
-        MarkerID = null;
     }
 
     public LocationPing(String New_Name, double New_Long, double New_Lat, String New_Desc, int New_Type, int New_Id) {
@@ -32,8 +42,6 @@ public class LocationPing extends RealmObject {
         Latitude = New_Lat;
         Description = New_Desc;
         LocationType = New_Type;
-        DatabaseID = New_Id;
-        MarkerID = null;
     }
 
     public void setName(String name) {
@@ -74,19 +82,6 @@ public class LocationPing extends RealmObject {
 
     public int GetLocationType(){
         return LocationType;
-    }
-
-    public int GetDatabaseID(){
-        return DatabaseID;
-    }
-
-    public String GetMarkerID(){
-        return MarkerID;
-    }
-
-    public void SetMarkerID(String New_MarkerID)
-    {
-        MarkerID = New_MarkerID;
     }
 
 }

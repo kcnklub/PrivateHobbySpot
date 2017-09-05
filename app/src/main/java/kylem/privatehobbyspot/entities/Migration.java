@@ -43,13 +43,42 @@ public class Migration implements RealmMigration {
             RealmList<LocationPing> LocationPings
             RealmList<People> peoples
          *************************************/
-
         if(oldVersion == 0){
             RealmObjectSchema userSchema = schema.get("User");
             userSchema
                     .removeField("UID")
                     .removeField("email")
                     .addField("Email", String.class, FieldAttribute.PRIMARY_KEY);
+            oldVersion++;
+        }
+        /*
+        *
+        * Version 1
+        * class LocationPing
+        *   string name
+        *   double lat long
+        *   string description
+        *   int locationType
+        *   String MarkerID
+        *   int databaseID
+        *   <RealmList><user> usersThatCanViewThisLocationPing
+        *
+        * Version 2
+        *   string name
+         *  double lat long
+         *  string description
+         *  int locationType
+         *  int markerID
+         *  RealmList<user> usersThatCanViewThisLocationPing
+        *
+        * */
+
+
+        if(oldVersion == 1){
+            RealmObjectSchema locationSchema = schema.get("LocationPing");
+            locationSchema
+                    .removeField("DatabaseID")
+                    .removeField("MarkerID");
             oldVersion++;
         }
 

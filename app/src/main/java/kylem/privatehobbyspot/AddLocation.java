@@ -16,7 +16,10 @@ import android.widget.RadioGroup;
 import com.google.android.gms.maps.model.LatLng;
 
 import io.realm.Realm;
+import io.realm.RealmQuery;
+import io.realm.RealmResults;
 import kylem.privatehobbyspot.entities.LocationPing;
+import kylem.privatehobbyspot.entities.User;
 
 
 public class AddLocation extends android.app.Fragment {
@@ -33,6 +36,8 @@ public class AddLocation extends android.app.Fragment {
     private EditText name;
     private EditText description;
     private RadioGroup locationType;
+    private Button confirmAddLocation;
+    private String userEmail;
 
     public AddLocation() {
         // Required empty public constructor
@@ -48,45 +53,9 @@ public class AddLocation extends android.app.Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         latLngToAdd = staticLatLngToAdd;
+        MainActivity mainActivity = (MainActivity) getActivity();
+        userEmail = mainActivity.getUserEmail();
 
-        Button confirmAddLocation = (Button) getView().findViewById(R.id.confirmAddLocation);
-        this.name = (EditText) getView().findViewById(R.id.locName);
-        description = (EditText) getView().findViewById(R.id.description);
-        locationType = (RadioGroup) getView().findViewById(R.id.locationType);
-        confirmAddLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                realm = Realm.getDefaultInstance();
-                try{
-                    realm.executeTransactionAsync(new Realm.Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-                            LocationPing ping = realm.createObject(LocationPing.class);
-                            ping.setName(AddLocation.this.name.getText().toString());
-                            ping.setLatitude(latLngToAdd.latitude);
-                            ping.setLongtitude(latLngToAdd.longitude);
-                            ping.setDescription(AddLocation.this.description.getText().toString());
-                            int LocationType = AddLocation.this.locationType.getCheckedRadioButtonId();
-                            ping.setLocationType(LocationType);
-                        }
-                    }, new Realm.Transaction.OnSuccess() {
-                        @Override
-                        public void onSuccess() {
-                            Log.d(TAG, "Location has been added to the database");
-                        }
-
-                    }, new Realm.Transaction.OnError() {
-                            @Override
-                            public void onError(Throwable error){
-                                Log.d(TAG, error.getMessage());
-                            }
-                        }
-                    );
-                } finally {
-                    realm.close();
-                }
-            }
-        });
     }
 
     @Override
@@ -94,6 +63,18 @@ public class AddLocation extends android.app.Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_add_location, container, false);
+    }
+
+    @Override
+    public void onStart(){
+        super.onStart();
+        this.confirmAddLocation = (Button) getView().findViewById(R.id.confirmAddLocation);
+        this.name = (EditText) getView().findViewById(R.id.locName);
+        this.description = (EditText) getView().findViewById(R.id.description);
+        this.locationType = (RadioGroup) getView().findViewById(R.id.locationType);
+        setOnClickListeners();
+
+
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -133,5 +114,50 @@ public class AddLocation extends android.app.Fragment {
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    private void setOnClickListeners(){
+        if(this.confirmAddLocation != null){
+            this.confirmAddLocation.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    realm = Realm.getDefaultInstance();
+                    try{
+                        realm.executeTransactionAsync(new Realm.Transaction() {
+                                                          @Override
+                                                          public void execute(Realm realm) {
+                                  RealmResults<User> currUser = realm.where(User.class).equalTo("Email", userEmail)
+                                          .findAll();
+                                  LocationPing ping = realm.createObject(LocationPing.class);
+                                  ping.setName(AddLocation.this.name.getText().toString());
+                                  ping.setLatitude(latLngToAdd.latitude);
+                                  ping.setLongtitude(latLngToAdd.longitude);
+                                  ping.setDescription(AddLocation.this.description.getText().toString());
+                                  int LocationType = AddLocation.this.locationType.getCheckedRadioButtonId();
+                                  ping.setLocationType(LocationType);
+                                  User user = currUser.first();
+                                  user.getLocationPings().add(ping);
+
+                              }
+                          }, new Realm.Transaction.OnSuccess() {
+                              @Override
+                              public void onSuccess() {
+                                  Log.d(TAG, "Location has been added to the database");
+                              }
+
+                          }, new Realm.Transaction.OnError() {
+                              @Override
+                              public void onError(Throwable error){
+                                  Log.d(TAG, error.getMessage());
+                              }
+                          }
+                        );
+                    } finally {
+                        realm.close();
+                        //wrap up the query by updating the UI and reload the pings.
+                    }
+                }
+            });
+        }
     }
 }

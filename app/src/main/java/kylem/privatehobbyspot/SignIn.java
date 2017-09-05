@@ -38,8 +38,9 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
     private TextView mStatusTextView;
     private Realm realm;
 
-    private User userToSignIn;
-    Intent moveToMain;
+
+    public String username;                 // Save username of the user signing in
+    public String userEmail;                // Save email of the user signing in
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,14 +49,11 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
 
         mGoogleApiClient = ((PrivateHobbySpot) getApplication()).getmGoogleApiClient();
 
-        moveToMain = new Intent(this, MainActivity.class);
-
         SignInButton signInButton = (SignInButton) findViewById(R.id.sign_in_button);
         signInButton.setSize(SignInButton.SIZE_STANDARD);
         signInButton.setOnClickListener(this);
 
         mStatusTextView  = (TextView) findViewById(R.id.status);
-
     }
 
     @Override
@@ -100,40 +98,57 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
     }
 
     private void handleSignInResult(GoogleSignInResult result) {
+        Log.d(TAG, "//////////////////////////////////////////////////");
         Log.d(TAG, "handleSignInResult:" + result.isSuccess());
         if(result.isSuccess()){
             //Signed in successfully, show authenticated UI.
             final GoogleSignInAccount acct = result.getSignInAccount();
             mStatusTextView.setText(getString(R.string.signed_in_fmt, acct.getDisplayName()));
             realm = Realm.getDefaultInstance();
-            try{
-                userToSignIn = new User(acct.getDisplayName(), acct.getEmail(), null);
-                realm.executeTransactionAsync(new Realm.Transaction(){
-                        @Override
-                        public void execute(Realm realm) {
-                            User user = realm.createObject(User.class, acct.getEmail());
-                            user.setDisplayName(acct.getDisplayName());
-                            user.setPassword(null);
-                        }
-                }, new Realm.Transaction.OnSuccess() {
-                            @Override
-                            public void onSuccess(){
-                                // Transaction was a success.
-                                Log.d(TAG, "Successful Realm Transaction");
+            RealmResults<User> existingUser = realm.where(User.class)
+                    .equalTo("Email", acct.getEmail())
+                    .findAll();
+            if(existingUser.size() == 0){
+                try{
+                    realm.executeTransactionAsync(new Realm.Transaction(){
+                                                      @Override
+                                                      public void execute(Realm realm) {
+                              User user = realm.createObject(User.class, acct.getEmail());
+                              user.setDisplayName(acct.getDisplayName());
+                              user.setPassword(null);
+                          }
+                      }, new Realm.Transaction.OnSuccess() {
+                          @Override
+                          public void onSuccess(){
+                              // Transaction was a success.
+                              Log.d(TAG, "Successful Realm Transaction");
+                              // this is where the username and email of the user will be stored
+                              // to move that data into the main activity so that we can know who
+                              // is signed in for requests.
+                              username = acct.getDisplayName();
+                              userEmail = acct.getEmail();
 
-                            }
-                }, new Realm.Transaction.OnError() {
-                            @Override
-                            public void onError(Throwable error){
-                                // Transaction didn't happen
-                                Log.d(TAG, error.getMessage());
-                            }
-                                              }
-                );
-            } finally {
-                realm.close();
+
+                          }
+                      }, new Realm.Transaction.OnError() {
+                          @Override
+                          public void onError(Throwable error){
+                              // Transaction didn't happen
+                              Log.d(TAG, error.getMessage());
+                              updateUI(false);
+                          }
+                      }
+                    );
+                } finally {
+                    realm.close();
+                }
+                updateUI(true);
+            } else {
+                username = acct.getDisplayName();
+                userEmail = acct.getEmail();
+                updateUI(true);
             }
-            updateUI(true);
+
         } else {
             // Signed out, show unauthenticated UI.
             updateUI(false);
@@ -143,8 +158,13 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
     private void updateUI(boolean signedIn){
         if (signedIn){
             findViewById(R.id.sign_in_button).setVisibility(View.GONE);
-            moveToMain.putExtra("user", userToSignIn);
-            startActivity(moveToMain);
+            Intent intent = new Intent(this, MainActivity.class);
+            Log.d(TAG, username);
+            Log.d(TAG, userEmail);
+            intent.putExtra("username", username);
+            intent.putExtra("userEmail", userEmail);
+            startActivity(intent);
+            Log.d(TAG, "moving to MainActivity");
         } else {
             mStatusTextView.setText(R.string.signed_out);
 
