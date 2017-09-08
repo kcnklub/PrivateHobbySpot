@@ -82,5 +82,15 @@ public class Migration implements RealmMigration {
             oldVersion++;
         }
 
+
+
+        if(oldVersion == 2){
+
+            RealmObjectSchema locationSchema = schema.get("LocationPing");
+            locationSchema
+                    .addField("Id", int.class);
+            oldVersion++;
+        }
+
     }
 }

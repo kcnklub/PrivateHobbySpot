@@ -56,6 +56,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
 import java.net.URL;
+import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -67,7 +68,8 @@ import kylem.privatehobbyspot.entities.User;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener, GoogleMap.OnMarkerClickListener,
-        LocationListener, AddLocation.OnFragmentInteractionListener {
+        LocationListener, AddLocation.OnFragmentInteractionListener,
+        LocationDetails.OnFragmentInteractionListener{
 
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 0;
 
@@ -98,11 +100,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private MaterialSearchView searchView;
 
     private MarkerOptions markerOptions;
-    private boolean isAddingLocation;
+    private boolean isLookingAtMap;
     private Marker newLocationMarker;
 
     private String username;
     private String userEmail;
+    public ArrayList<LocationPing> userLocations;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         fragmentTransaction.add(R.id.fragment_container, mMapFragment);
         fragmentTransaction.commit();
         getInitLocation(getApplicationContext());
-        isAddingLocation = false;
+        isLookingAtMap = true;
 
         mGoogleApiClient = ((PrivateHobbySpot) getApplication()).getmGoogleApiClient();
         username = getIntent().getStringExtra("username");
@@ -139,6 +142,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         cancelLocationButton = (FloatingActionButton) findViewById(R.id.cancelLocationButton);
         viewSettingsButton = (FloatingActionButton) findViewById(R.id.view_settings_button);
         setClickListeners();
+
+        userLocations = new ArrayList<LocationPing>();
 
         Intent intent = getIntent();
         if(Intent.ACTION_SEARCH.equals(intent.getAction())){
@@ -265,6 +270,19 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        int markerId = Integer.valueOf(marker.getId().substring(1));
+        for(LocationPing location : userLocations){
+            if(location.getMarkerId() == markerId){
+                LocationDetails locationDetails = LocationDetails
+                        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId());
+                android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                transaction.replace(R.id.fragment_container, locationDetails);
+                transaction.addToBackStack(null);
+                transaction.commit();
+                this.isLookingAtMap = false;
+                this.floatingActionMenu.setVisibility(View.GONE);
+            }
+        }
         return true;
     }
 
@@ -326,14 +344,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         addLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(!isAddingLocation){
+                if(isLookingAtMap){
                     markerOptions = new MarkerOptions()
                             .position(new LatLng(userUpdatedLocation.getLatitude(), userUpdatedLocation.getLongitude()))
                             .title("You are here")
                             .draggable(true);
                     newLocationMarker = mMap.addMarker(markerOptions);
                     floatingActionMenu.close(false);
-                    isAddingLocation = true;
+                    isLookingAtMap = false;
                     floatingActionMenu.setVisibility(View.GONE);
                     confirmLocationButton.setVisibility(View.VISIBLE);
                     cancelLocationButton.setVisibility(View.VISIBLE);
@@ -376,11 +394,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             public void onClick(View v){
                 // TODO: 8/28/2017 confirm the location of the marker on the map and open the add locations fragment
                 LatLng markerPos = newLocationMarker.getPosition();
-                Context context = getApplicationContext();
-                int duration = Toast.LENGTH_SHORT;
-                Toast toast = Toast.makeText(context, markerPos.toString(), duration);
-                toast.show();
-                Log.d(TAG, "in the block that adds the fragment");
                 AddLocation addLocationFragment = AddLocation.newInstance(markerPos);
                 android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
                 transaction.replace(R.id.fragment_container, addLocationFragment);
@@ -398,7 +411,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 confirmLocationButton.setVisibility(View.GONE);
                 cancelLocationButton.setVisibility(View.GONE);
                 floatingActionMenu.setVisibility(View.VISIBLE);
-                isAddingLocation = false;
+                isLookingAtMap = true;
             }
         });
 
@@ -431,11 +444,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     @Override
     public void onBackPressed(){
-        if(isAddingLocation){
+        if(!isLookingAtMap){
             super.onBackPressed();
             floatingActionMenu.setVisibility(View.VISIBLE);
             mMap.clear();
-            isAddingLocation = false;
+            isLookingAtMap = true;
+            getUserLocationPings();
         } else {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle(R.string.sign_out);
@@ -466,6 +480,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         return userEmail;
     }
 
+    public FloatingActionMenu getFloatingActionMenu() {
+        return floatingActionMenu;
+    }
+
+    public boolean isLookingAtMap() {
+        return isLookingAtMap;
+    }
+
+    public void setLookingAtMap(boolean lookingAtMap) {
+        isLookingAtMap = lookingAtMap;
+    }
+
     public void getUserLocationPings(){
         Realm realm = Realm.getDefaultInstance();
         RealmQuery<User> query = realm.where(User.class);
@@ -473,14 +499,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         RealmResults<User> user = query.findAll();
         if(user.size() == 1){
             User currentUser = user.first();
-            RealmList<LocationPing> userLocations = currentUser.getLocationPings();
-            if(userLocations.size() != 0){
-                for(LocationPing location : userLocations){
-                    mMap.addMarker(new MarkerOptions()
+            RealmList<LocationPing> userSavedLocations = currentUser.getLocationPings();
+            if(userSavedLocations.size() != 0){
+                for(LocationPing location : userSavedLocations){
+                    String markerId = mMap.addMarker(new MarkerOptions()
                             .draggable(false)
                             .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
                             .title(location.GetName())
-                    );
+                    ).getId();
+                    markerId = markerId.substring(1);
+                    int n_markerId = Integer.valueOf(markerId);
+                    location.setMarkerId(n_markerId);
+                    userLocations.add(location);
                 }
             }
         }

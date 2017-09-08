@@ -46,13 +46,10 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
-
         mGoogleApiClient = ((PrivateHobbySpot) getApplication()).getmGoogleApiClient();
-
         SignInButton signInButton = (SignInButton) findViewById(R.id.sign_in_button);
         signInButton.setSize(SignInButton.SIZE_STANDARD);
         signInButton.setOnClickListener(this);
-
         mStatusTextView  = (TextView) findViewById(R.id.status);
     }
 
@@ -98,8 +95,6 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
     }
 
     private void handleSignInResult(GoogleSignInResult result) {
-        Log.d(TAG, "//////////////////////////////////////////////////");
-        Log.d(TAG, "handleSignInResult:" + result.isSuccess());
         if(result.isSuccess()){
             //Signed in successfully, show authenticated UI.
             final GoogleSignInAccount acct = result.getSignInAccount();
@@ -159,15 +154,11 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
         if (signedIn){
             findViewById(R.id.sign_in_button).setVisibility(View.GONE);
             Intent intent = new Intent(this, MainActivity.class);
-            Log.d(TAG, username);
-            Log.d(TAG, userEmail);
             intent.putExtra("username", username);
             intent.putExtra("userEmail", userEmail);
             startActivity(intent);
-            Log.d(TAG, "moving to MainActivity");
         } else {
             mStatusTextView.setText(R.string.signed_out);
-
             findViewById(R.id.sign_in_button).setVisibility(View.VISIBLE);
         }
     }

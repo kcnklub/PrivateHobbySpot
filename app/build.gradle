@@ -5,7 +5,7 @@ android {
         config {
             keyAlias 'debug'
             keyPassword 'jackman01'
-            storeFile file('C:/Users/Kyle/.android/android.jks')
+            storeFile file('C:/Users/kylem/.android/android.jks')
             storePassword 'jackman01'
         }
     }
@@ -45,6 +45,7 @@ dependencies {
     compile 'com.android.support:support-v4:25.3.1'
     compile 'com.android.support:support-annotations:25.3.1'
     compile 'com.miguelcatalan:materialsearchview:1.4.0'
+    compile 'com.android.support:recyclerview-v7:25.3.1'
     testCompile 'junit:junit:4.12'
     debugCompile 'com.facebook.stetho:stetho:1.5.0'
     debugCompile 'com.uphyca:stetho_realm:2.1.0'

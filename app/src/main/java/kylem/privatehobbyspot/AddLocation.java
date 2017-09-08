@@ -1,5 +1,6 @@
 package kylem.privatehobbyspot;
 
+import android.app.FragmentTransaction;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
@@ -101,16 +102,6 @@ public class AddLocation extends android.app.Fragment {
         mListener = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
@@ -124,11 +115,13 @@ public class AddLocation extends android.app.Fragment {
                     realm = Realm.getDefaultInstance();
                     try{
                         realm.executeTransactionAsync(new Realm.Transaction() {
-                                                          @Override
-                                                          public void execute(Realm realm) {
+                              @Override
+                              public void execute(Realm realm) {
+                                  Log.d(TAG, "executing transaction");
                                   RealmResults<User> currUser = realm.where(User.class).equalTo("Email", userEmail)
                                           .findAll();
-                                  LocationPing ping = realm.createObject(LocationPing.class);
+                                  long numberOfPings = realm.where(LocationPing.class).count();
+                                  LocationPing ping = realm.createObject(LocationPing.class, numberOfPings + 1);
                                   ping.setName(AddLocation.this.name.getText().toString());
                                   ping.setLatitude(latLngToAdd.latitude);
                                   ping.setLongtitude(latLngToAdd.longitude);
@@ -137,7 +130,6 @@ public class AddLocation extends android.app.Fragment {
                                   ping.setLocationType(LocationType);
                                   User user = currUser.first();
                                   user.getLocationPings().add(ping);
-
                               }
                           }, new Realm.Transaction.OnSuccess() {
                               @Override
@@ -155,9 +147,20 @@ public class AddLocation extends android.app.Fragment {
                     } finally {
                         realm.close();
                         //wrap up the query by updating the UI and reload the pings.
+                        getFragmentManager().popBackStack();
                     }
                 }
             });
         }
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        //When the user is done adding the location they are redirected back the "home page"
+        MainActivity mainActivity = (MainActivity) getActivity();
+        mainActivity.getFloatingActionMenu().setVisibility(View.VISIBLE);
+        mainActivity.setLookingAtMap(true);
+        mainActivity.getUserLocationPings();
     }
 }
