@@ -51,6 +51,7 @@ public class SignIn extends AppCompatActivity implements View.OnClickListener, G
         signInButton.setSize(SignInButton.SIZE_STANDARD);
         signInButton.setOnClickListener(this);
         mStatusTextView  = (TextView) findViewById(R.id.status);
+        //resetRealm();
     }
 
     @Override

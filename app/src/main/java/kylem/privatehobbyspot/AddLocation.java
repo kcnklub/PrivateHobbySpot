@@ -56,7 +56,6 @@ public class AddLocation extends android.app.Fragment {
         latLngToAdd = staticLatLngToAdd;
         MainActivity mainActivity = (MainActivity) getActivity();
         userEmail = mainActivity.getUserEmail();
-
     }
 
     @Override
@@ -118,11 +117,11 @@ public class AddLocation extends android.app.Fragment {
                               @Override
                               public void execute(Realm realm) {
                                   Log.d(TAG, "executing transaction");
-                                  RealmResults<User> currUser = realm.where(User.class).equalTo("Email", userEmail)
-                                          .findAll();
+                                  RealmResults<User> currUser = realm.where(User.class).equalTo("Email", userEmail).findAll();
                                   long numberOfPings = realm.where(LocationPing.class).count();
                                   LocationPing ping = realm.createObject(LocationPing.class, numberOfPings + 1);
                                   ping.setName(AddLocation.this.name.getText().toString());
+                                  ping.setCreatedByUser(currUser.first());
                                   ping.setLatitude(latLngToAdd.latitude);
                                   ping.setLongtitude(latLngToAdd.longitude);
                                   ping.setDescription(AddLocation.this.description.getText().toString());
@@ -136,10 +135,10 @@ public class AddLocation extends android.app.Fragment {
                               public void onSuccess() {
                                   Log.d(TAG, "Location has been added to the database");
                               }
-
                           }, new Realm.Transaction.OnError() {
                               @Override
                               public void onError(Throwable error){
+                                  Log.d(TAG, "Failed to added to the database");
                                   Log.d(TAG, error.getMessage());
                               }
                           }

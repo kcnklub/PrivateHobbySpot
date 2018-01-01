@@ -27,7 +27,7 @@
 
         <TextView
             android:id="@+id/location_description"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="TextView" />
 
@@ -36,6 +36,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TextView" />
+
+        <ListView
+            android:id="@+id/users_shared_with"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <EditText
+            android:id="@+id/user_to_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="Email" />
+
+        <Button
+            android:id="@+id/add_user_to_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Add User" />
 
         <Button
             android:id="@+id/delete_ping"

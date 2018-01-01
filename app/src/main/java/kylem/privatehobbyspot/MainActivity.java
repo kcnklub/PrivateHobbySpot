@@ -49,6 +49,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener, GoogleMap.OnMarkerClickListener,
         LocationListener, AddLocation.OnFragmentInteractionListener,
-        LocationDetails.OnFragmentInteractionListener{
+        LocationDetails.OnFragmentInteractionListener {
 
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 0;
 
@@ -129,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mGoogleApiClient = ((PrivateHobbySpot) getApplication()).getmGoogleApiClient();
         username = getIntent().getStringExtra("username");
         userEmail = getIntent().getStringExtra("userEmail");
-        if(username != null){
+        if (username != null) {
             Log.d(TAG, username);
         }
 
@@ -146,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         userLocations = new ArrayList<LocationPing>();
 
         Intent intent = getIntent();
-        if(Intent.ACTION_SEARCH.equals(intent.getAction())){
+        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
 
         }
@@ -154,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu){
+    public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.options_menu, menu);
 
         MenuItem item = menu.findItem(R.id.action_search);
@@ -169,10 +170,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     //Permission for stuff and do stuff.
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[],
-                                           int grantResults[]){
+                                           int grantResults[]) {
         Log.d(TAG, "result");
-        if( requestCode == MY_PERMISSIONS_REQUEST_LOCATION ) {
-            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+        if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "we are in");
                 getInitLocation(getApplicationContext());
             } else {
@@ -184,16 +185,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    public void signOut(){
+    public void signOut() {
         mGoogleApiClient.connect();
         mGoogleApiClient.registerConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
             @Override
             public void onConnected(@Nullable Bundle bundle) {
-                if(mGoogleApiClient.isConnected()){
+                if (mGoogleApiClient.isConnected()) {
                     Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback(new ResultCallback<Status>() {
                         @Override
                         public void onResult(@NonNull Status status) {
-                            if(status.isSuccess()){
+                            if (status.isSuccess()) {
                                 Log.d(TAG, "user is Logged out");
                                 Intent intent = new Intent(MainActivity.this, SignIn.class);
                                 startActivity(intent);
@@ -212,23 +213,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @Override
-    public void onConnected(Bundle bundle){
+    public void onConnected(Bundle bundle) {
 
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult){
-        if(connectionResult.hasResolution()){
-            try{
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        if (connectionResult.hasResolution()) {
+            try {
                 connectionResult.startResolutionForResult(this, CONNECTION_FAILURE_RESOLUTION_REQUEST);
-            } catch (IntentSender.SendIntentException e){
+            } catch (IntentSender.SendIntentException e) {
                 e.printStackTrace();
             }
         }
     }
 
     @Override
-    public void onConnectionSuspended(int i){
+    public void onConnectionSuspended(int i) {
 
     }
 
@@ -237,11 +238,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     public void onMapReady(GoogleMap googleMap) {
 
         final PackageManager packageManager = getApplicationContext().getPackageManager();
-        if(packageManager.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED)
-        {
+        if (packageManager.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED) {
             mMap = googleMap;
             mMap.getUiSettings().setRotateGesturesEnabled(false);
-            if(userUpdatedLocation != null){
+            if (userUpdatedLocation != null) {
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(userUpdatedLocation.getLatitude(), userUpdatedLocation.getLongitude()), 14), 2000, null);
             }
             mMap.setOnMarkerDragListener(this);
@@ -253,12 +253,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @Override
-    public void onMarkerDragStart(Marker marker){
+    public void onMarkerDragStart(Marker marker) {
 
     }
 
     @Override
-    public void onMarkerDrag(Marker marker){
+    public void onMarkerDrag(Marker marker) {
 
     }
 
@@ -271,10 +271,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     @Override
     public boolean onMarkerClick(Marker marker) {
         int markerId = Integer.valueOf(marker.getId().substring(1));
-        for(LocationPing location : userLocations){
-            if(location.getMarkerId() == markerId){
+        for (LocationPing location : userLocations) {
+            if (location.getMarkerId() == markerId) {
+                Realm realm = Realm.getDefaultInstance();
+                RealmResults<User> userCreated = realm.where(User.class).equalTo("Email", userEmail).findAll();
+                User user = userCreated.first();
+                boolean isUserCreator = location.getCreatedByUser().getEmail().equals(user.getEmail());
+                Log.d(TAG, location.getCreatedByUser().getEmail());
+                Log.d(TAG, user.getEmail());
+                Log.d(TAG, String.valueOf(isUserCreator));
                 LocationDetails locationDetails = LocationDetails
-                        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId());
+                        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId(), isUserCreator);
                 android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
                 transaction.replace(R.id.fragment_container, locationDetails);
                 transaction.addToBackStack(null);
@@ -287,43 +294,43 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @TargetApi(23)
-    public void getInitLocation(Context context){
-        if( checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+    public void getInitLocation(Context context) {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "we have permissions right before try block");
             try {
                 this.mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
                 this.isGPSEnabled = this.mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
                 this.isNetworkEnabled = this.mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                if(!isNetworkEnabled && !isGPSEnabled) {
+                if (!isNetworkEnabled && !isGPSEnabled) {
                     this.locationServiceAvaible = false;
                     Log.d(TAG, "GPS and network are not avaible");
                 } else {
                     this.locationServiceAvaible = true;
-                    if(this.isNetworkEnabled){
+                    if (this.isNetworkEnabled) {
                         Log.d(TAG, "Network");
                         this.mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                                 MIN_TIME_BW_UPDATES,
                                 MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
 
-                        if(this.mLocationManager != null){
+                        if (this.mLocationManager != null) {
                             userUpdatedLocation = this.mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                             //update coord.
                         }
                     }
 
-                    if(this.isGPSEnabled){
+                    if (this.isGPSEnabled) {
                         Log.d(TAG, "GPS");
                         this.mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                                 MIN_TIME_BW_UPDATES,
                                 MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
 
-                        if(this.mLocationManager != null){
+                        if (this.mLocationManager != null) {
                             userUpdatedLocation = this.mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                             //update coord.
                         }
                     }
                 }
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 Log.d(TAG, "Error create Location service: " + ex.getMessage());
             } finally {
                 // had to move the call for the callback into this part of the code
@@ -332,19 +339,19 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 mMapFragment.getMapAsync(this);
             }
         } else {
-            if( shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)){
+            if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 Toast.makeText(this, "Location is need to show you location pings near you", Toast.LENGTH_SHORT).show();
             }
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
         }
     }
 
-    public void setClickListeners(){
+    public void setClickListeners() {
 
         addLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isLookingAtMap){
+                if (isLookingAtMap) {
                     markerOptions = new MarkerOptions()
                             .position(new LatLng(userUpdatedLocation.getLatitude(), userUpdatedLocation.getLongitude()))
                             .title("You are here")
@@ -384,14 +391,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         signoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v){
+            public void onClick(View v) {
                 signOut();
             }
         });
 
         confirmLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v){
+            public void onClick(View v) {
                 // TODO: 8/28/2017 confirm the location of the marker on the map and open the add locations fragment
                 LatLng markerPos = newLocationMarker.getPosition();
                 AddLocation addLocationFragment = AddLocation.newInstance(markerPos);
@@ -443,8 +450,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     @Override
-    public void onBackPressed(){
-        if(!isLookingAtMap){
+    public void onBackPressed() {
+        if (!isLookingAtMap) {
             super.onBackPressed();
             floatingActionMenu.setVisibility(View.VISIBLE);
             mMap.clear();
@@ -492,16 +499,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         isLookingAtMap = lookingAtMap;
     }
 
-    public void getUserLocationPings(){
+    public void getUserLocationPings() {
         Realm realm = Realm.getDefaultInstance();
         RealmQuery<User> query = realm.where(User.class);
         query.equalTo("Email", userEmail);
         RealmResults<User> user = query.findAll();
-        if(user.size() == 1){
+        if (user.size() == 1) {
             User currentUser = user.first();
             RealmList<LocationPing> userSavedLocations = currentUser.getLocationPings();
-            if(userSavedLocations.size() != 0){
-                for(LocationPing location : userSavedLocations){
+            if (userSavedLocations.size() != 0) {
+                for (LocationPing location : userSavedLocations) {
                     String markerId = mMap.addMarker(new MarkerOptions()
                             .draggable(false)
                             .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
@@ -515,5 +522,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         }
 
+        //get the pings that are shared with that user.
+        RealmResults<LocationPing> locations = realm.where(LocationPing.class).findAll();
+        for(int i = 0; i < locations.size(); i++){
+            if(locations.get(i).getUsersThatCanViewThisLocationPing().contains(user.first())){
+                String markerId = mMap.addMarker(new MarkerOptions()
+                        .draggable(false)
+                        .position(new LatLng(locations.get(i).GetLatitude(), locations.get(i).GetLongtitude()))
+                        .title(locations.get(i).GetName())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                ).getId();
+                markerId = markerId.substring(1);
+                int n_markerID = Integer.valueOf(markerId);
+                locations.get(i).setMarkerId(n_markerID);
+                userLocations.add(locations.get(i));
+            }
+        }
     }
 }

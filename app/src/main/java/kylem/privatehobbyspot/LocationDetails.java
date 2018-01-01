@@ -11,22 +11,32 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import kylem.privatehobbyspot.entities.LocationPing;
+import kylem.privatehobbyspot.entities.User;
 
 public class LocationDetails extends android.app.Fragment {
-    // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String LOCATION_ID = "Location id";
     private static final String LOCATION_NAME = "Location Name";
     private static final String LOCATION_DESCRIPTION = "Location Description";
     private static final String LOCATION_TYPE = "Location Type";
     private static final String TAG = "Location Details";
+    private static final String USER_IS_CREATOR = "User Is Creator";
 
 
     // TODO: Rename and change types of parameters
@@ -34,11 +44,15 @@ public class LocationDetails extends android.app.Fragment {
     private String mlocationName;
     private String mlocationDescription;
     private int mlocationType;
+    private boolean mUserIsCreator;
 
     private TextView locationNameView;
     private TextView locationDescriptionView;
     private TextView locationTypeView;
+    private EditText addUserToView;
+    private Button addUserToViewButton;
     private Button deletePingButton;
+    private ListView usersSharedWith;
 
     private OnFragmentInteractionListener mListener;
 
@@ -46,13 +60,14 @@ public class LocationDetails extends android.app.Fragment {
         // Required empty public constructor
     }
     // TODO: Rename and change types and number of parameters
-    public static LocationDetails newInstance(int locationId, String locationName, String locationDescription, int locationType) {
+    public static LocationDetails newInstance(int locationId, String locationName, String locationDescription, int locationType, boolean userIsCreator) {
         LocationDetails fragment = new LocationDetails();
         Bundle args = new Bundle();
         args.putInt(LOCATION_ID, locationId);
         args.putString(LOCATION_NAME, locationName);
         args.putString(LOCATION_DESCRIPTION, locationDescription);
         args.putInt(LOCATION_TYPE, locationType);
+        args.putBoolean(USER_IS_CREATOR, userIsCreator);
         fragment.setArguments(args);
         return fragment;
     }
@@ -65,6 +80,7 @@ public class LocationDetails extends android.app.Fragment {
             mlocationName = getArguments().getString(LOCATION_NAME);
             mlocationDescription = getArguments().getString(LOCATION_DESCRIPTION);
             mlocationType = getArguments().getInt(LOCATION_TYPE);
+            mUserIsCreator = getArguments().getBoolean(USER_IS_CREATOR);
         }
     }
 
@@ -82,21 +98,53 @@ public class LocationDetails extends android.app.Fragment {
         locationDescriptionView = (TextView) getView().findViewById(R.id.location_description);
         locationTypeView = (TextView) getView().findViewById(R.id.location_type);
         deletePingButton = (Button) getView().findViewById(R.id.delete_ping);
+        addUserToView = (EditText) getView().findViewById(R.id.user_to_view);
+        addUserToViewButton = (Button) getView().findViewById(R.id.add_user_to_view);
+        usersSharedWith = (ListView) getView().findViewById(R.id.users_shared_with);
+
+        if(!mUserIsCreator){
+            addUserToView.setVisibility(View.INVISIBLE);
+            addUserToViewButton.setVisibility(View.INVISIBLE);
+            deletePingButton.setVisibility(View.INVISIBLE);
+            usersSharedWith.setVisibility(View.INVISIBLE);
+        } else {
+            Realm realm = Realm.getDefaultInstance();
+            RealmResults<LocationPing> locationPingRealmResults = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
+
+
+            final ArrayList<User> userSharedList = new ArrayList<User>(locationPingRealmResults.first().getUsersThatCanViewThisLocationPing());
+            /*
+            final ArrayList<String> list = new ArrayList<String>();
+            for(int i = 0; i < userSharedList.size(); i++){
+                list.add(userSharedList.get(i).getEmail());
+            }
+
+            ListAdapter adapter = new ArrayAdapter<String>(getActivity().getApplicationContext(), android.R.layout.simple_list_item_1, list);
+            usersSharedWith.setAdapter(adapter);
+               */
+
+            UserSharedWithAdapter adapter = new UserSharedWithAdapter(
+                    getActivity().getBaseContext(), R.layout.listview_item_row,
+                    userSharedList);
+
+            usersSharedWith.setAdapter(adapter);
+
+        }
 
         locationNameView.setText(mlocationName);
         locationDescriptionView.setText(mlocationDescription);
         switch (mlocationType){
             case 0:
-                locationTypeView.setText("Longboarding");
+                locationTypeView.setText(R.string.Longboarding);
                 break;
             case 1:
-                locationTypeView.setText("Biking");
+                locationTypeView.setText(R.string.Biking);
                 break;
             case 2:
-                locationTypeView.setText("Hiking");
+                locationTypeView.setText(R.string.Hiking);
                 break;
             default:
-                locationTypeView.setText("Other");
+                locationTypeView.setText(R.string.Other);
         }
 
         deletePingButton.setOnClickListener(new View.OnClickListener() {
@@ -155,9 +203,34 @@ public class LocationDetails extends android.app.Fragment {
                 builder.show();
             }
         });
+
+        addUserToViewButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v){
+                String input = addUserToView.getText().toString();
+                if(!input.equals("")){
+                    Log.d(TAG, input);
+                    Realm realm = Realm.getDefaultInstance();
+                    RealmResults<User> friend = realm.where(User.class).equalTo("Email", input).findAll();
+                    if(friend.size() != 0){
+                        User friendUser = friend.first();
+                        RealmResults<LocationPing> Query = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
+                        LocationPing location = Query.first();
+                        realm.beginTransaction();
+                        location.getUsersThatCanViewThisLocationPing().add(friendUser);
+                        realm.commitTransaction();
+                        Log.d(TAG, "User can view this now");
+                        Toast.makeText(getActivity().getApplicationContext(), "Location Shared with " + friendUser.getDisplayName(), Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getActivity().getApplicationContext(), "User Does NOT Exist", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(getActivity().getApplicationContext(), "Input Blank", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -205,4 +278,5 @@ public class LocationDetails extends android.app.Fragment {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
 }
