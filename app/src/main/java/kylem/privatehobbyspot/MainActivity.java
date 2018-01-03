@@ -331,7 +331,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     }
                 }
             } catch (Exception ex) {
-                Log.d(TAG, "Error create Location service: " + ex.getMessage());
+                Log.e(TAG, "Error create Location service: " + ex.getMessage());
             } finally {
                 // had to move the call for the callback into this part of the code
                 // so that the call back would happen after the permissions were accepted or denied

@@ -124,7 +124,7 @@ public class LocationDetails extends android.app.Fragment {
                */
 
             UserSharedWithAdapter adapter = new UserSharedWithAdapter(
-                    getActivity().getBaseContext(), R.layout.listview_item_row,
+                    getActivity(), R.layout.listview_item_row,
                     userSharedList);
 
             usersSharedWith.setAdapter(adapter);
