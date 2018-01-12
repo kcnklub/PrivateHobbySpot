@@ -280,14 +280,19 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.d(TAG, location.getCreatedByUser().getEmail());
                 Log.d(TAG, user.getEmail());
                 Log.d(TAG, String.valueOf(isUserCreator));
-                LocationDetails locationDetails = LocationDetails
-                        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId(), isUserCreator);
-                android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
-                transaction.replace(R.id.fragment_container, locationDetails);
-                transaction.addToBackStack(null);
-                transaction.commit();
-                this.isLookingAtMap = false;
-                this.floatingActionMenu.setVisibility(View.GONE);
+                //LocationDetails locationDetails = LocationDetails
+                //        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId(), isUserCreator);
+                Intent intent = new Intent(this, LocationDetailsActivity.class);
+                intent.putExtra("locationID", location.getId());
+                intent.putExtra("locationName", location.GetName());
+                intent.putExtra("locationDescription", location.GetDescription());
+                intent.putExtra("locationMarkerID", location.getMarkerId());
+                intent.putExtra("isUserCreator", isUserCreator);
+                startActivity(intent);
+                //android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                //transaction.replace(R.id.fragment_container, locationDetails);
+                //transaction.addToBackStack(null);
+                //transaction.commit();
             }
         }
         return true;
