@@ -1,6 +1,7 @@
 package kylem.privatehobbyspot.entities;
 
 import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
 
 /**
  * Created by Kyle on 1/8/2018.
@@ -8,9 +9,10 @@ import io.realm.RealmObject;
 
 public class DayOptions extends RealmObject{
 
-    // if [0] is -1 then the user cant see the locatoin on that day at all.
-    // if [0] is 2 then the user can see the location for the full day.
-    // if [0] is a 0 or a 1 they can see it for the hours that are a 1 and cannot see it for the hours that are a 0.
+    @PrimaryKey
+    private int id;
+
+    private boolean canViewAllDay;
 
     private int hourStart;
     private boolean isAMStart;
@@ -20,11 +22,20 @@ public class DayOptions extends RealmObject{
 
     public DayOptions(){}
 
-    public DayOptions(int HourStart, boolean IsAMStart, int HourStop, boolean IsAMStop){
+    public DayOptions(boolean CanViewAllDay, int HourStart, boolean IsAMStart, int HourStop, boolean IsAMStop){
+        canViewAllDay = CanViewAllDay;
         hourStart = HourStart;
         isAMStart = IsAMStart;
         hourStop = HourStop;
         isAMStop = IsAMStop;
+    }
+
+    public boolean isCanViewAllDay() {
+        return canViewAllDay;
+    }
+
+    public void setCanViewAllDay(boolean canViewAllDay) {
+        this.canViewAllDay = canViewAllDay;
     }
 
     public int getHourStart() {

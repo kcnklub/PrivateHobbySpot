@@ -6,8 +6,10 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmQuery;
 import io.realm.annotations.PrimaryKey;
 
 /**
@@ -17,6 +19,8 @@ import io.realm.annotations.PrimaryKey;
 public class UserLocationPingViewOptions extends RealmObject {
 
     @PrimaryKey
+    private int id;
+
     private String UserID;
 
     private int LocationPingID;
@@ -25,10 +29,13 @@ public class UserLocationPingViewOptions extends RealmObject {
 
     public UserLocationPingViewOptions(){}
 
-    public UserLocationPingViewOptions(int Id, String userID, int locationPingID, RealmList<DayOptions> dayOptions){
+    public UserLocationPingViewOptions(String userID, int locationPingID){
         UserID = userID;
         LocationPingID = locationPingID;
-        dayOptionsArrayList = dayOptions;
+        dayOptionsArrayList = new RealmList<DayOptions>();
+        for(int i = 0; i < 7; i++){
+            dayOptionsArrayList.add(new DayOptions(true, 0, false, 0, false));
+        }
 
     }
 

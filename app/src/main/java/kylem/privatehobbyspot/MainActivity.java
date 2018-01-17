@@ -529,18 +529,20 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         //get the pings that are shared with that user.
         RealmResults<LocationPing> locations = realm.where(LocationPing.class).findAll();
-        for(int i = 0; i < locations.size(); i++){
-            if(locations.get(i).getUsersThatCanViewThisLocationPing().contains(user.first())){
-                String markerId = mMap.addMarker(new MarkerOptions()
-                        .draggable(false)
-                        .position(new LatLng(locations.get(i).GetLatitude(), locations.get(i).GetLongtitude()))
-                        .title(locations.get(i).GetName())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
-                ).getId();
-                markerId = markerId.substring(1);
-                int n_markerID = Integer.valueOf(markerId);
-                locations.get(i).setMarkerId(n_markerID);
-                userLocations.add(locations.get(i));
+        if(locations.size() != 0){
+            for(int i = 0; i < locations.size(); i++){
+                if(locations.get(i).getUsersThatCanViewThisLocationPing().contains(user.first())){
+                    String markerId = mMap.addMarker(new MarkerOptions()
+                            .draggable(false)
+                            .position(new LatLng(locations.get(i).GetLatitude(), locations.get(i).GetLongtitude()))
+                            .title(locations.get(i).GetName())
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                    ).getId();
+                    markerId = markerId.substring(1);
+                    int n_markerID = Integer.valueOf(markerId);
+                    locations.get(i).setMarkerId(n_markerID);
+                    userLocations.add(locations.get(i));
+                }
             }
         }
     }

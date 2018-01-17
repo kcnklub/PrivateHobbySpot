@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,12 +19,15 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
+import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
 
 /**
  * Created by kylem on 12/31/2017.
  */
 
 public class UserSharedWithAdapter extends ArrayAdapter<User>{
+
+    private final String TAG = "User Shared With Adapter";
 
     Context context;
     int layoutResourceId;
@@ -77,6 +81,15 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
                     if(ping.getUsersThatCanViewThisLocationPing() != null){
                         ping.getUsersThatCanViewThisLocationPing().remove(userUnshare);
                     }
+
+                    RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class)
+                            .equalTo("UserID", userUnshare.getEmail())
+                            .equalTo("LocationPingID", ping.getId())
+                            .findAll();
+
+                    userLocationPingViewOptionsRealmResults.deleteAllFromRealm();
+                    Log.d(TAG, "deleted");
+
                     realm.commitTransaction();
                     realm.close();
                     locationDetailsActivity.recreate();

@@ -13,9 +13,13 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 import io.realm.Realm;
+import io.realm.RealmList;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import kylem.privatehobbyspot.entities.DayOptions;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
+import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
 
 public class LocationDetailsActivity extends AppCompatActivity {
 
@@ -110,6 +114,24 @@ public class LocationDetailsActivity extends AppCompatActivity {
                         LocationPing location = Query.first();
                         realm.beginTransaction();
                         location.getUsersThatCanViewThisLocationPing().add(friendUser);
+
+                        RealmQuery<UserLocationPingViewOptions> query = realm.where(UserLocationPingViewOptions.class);
+
+                        UserLocationPingViewOptions userLocationPingViewOptions = realm.createObject(UserLocationPingViewOptions.class, query.count() + 1 );
+                        userLocationPingViewOptions.setUserID(friendUser.getEmail());
+                        userLocationPingViewOptions.setLocationPingID(location.getId());
+
+                        RealmQuery<DayOptions> dayOptionsRealmQuery = realm.where(DayOptions.class);
+                        RealmList<DayOptions> dayOptionsArrayList = userLocationPingViewOptions.getDayOptionsArrayList();
+                        for(int i = 0; i < 7; i++){
+                            DayOptions dayOptions = realm.createObject(DayOptions.class, dayOptionsRealmQuery.count() + 1);
+                            dayOptions.setAMStart(false);
+                            dayOptions.setAMStop(false);
+                            dayOptions.setHourStart(0);
+                            dayOptions.setHourStop(0);
+                            dayOptions.setCanViewAllDay(true);
+                            dayOptionsArrayList.add(dayOptions);
+                        }
                         realm.commitTransaction();
                         Log.d(TAG, "User can view this now");
                         Toast.makeText(getApplicationContext(), "Location Shared with " + friendUser.getDisplayName(), Toast.LENGTH_SHORT).show();

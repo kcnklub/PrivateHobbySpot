@@ -124,7 +124,7 @@ public class LocationDetails extends android.app.Fragment {
                */
 
             UserSharedWithAdapter adapter = new UserSharedWithAdapter(
-                    getActivity(), R.layout.listview_item_row,
+                    getActivity().getApplicationContext(), R.layout.listview_item_row,
                     userSharedList);
 
             usersSharedWith.setAdapter(adapter);
@@ -221,14 +221,12 @@ public class LocationDetails extends android.app.Fragment {
                         realm.commitTransaction();
                         Log.d(TAG, "User can view this now");
                         Toast.makeText(getActivity().getApplicationContext(), "Location Shared with " + friendUser.getDisplayName(), Toast.LENGTH_SHORT).show();
-
                     } else {
                         Toast.makeText(getActivity().getApplicationContext(), "User Does NOT Exist", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(getActivity().getApplicationContext(), "Input Blank", Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
     }
@@ -281,7 +279,4 @@ public class LocationDetails extends android.app.Fragment {
         void onFragmentInteraction(Uri uri);
     }
 
-    public int getMlocationId() {
-        return mlocationId;
-    }
 }

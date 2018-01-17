@@ -3,6 +3,7 @@ package kylem.privatehobbyspot;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -37,14 +38,19 @@ public class UserViewOptionsActivity extends AppCompatActivity {
                 .equalTo("LocationPingID", locationID)
                 .findAll();
 
+        if(userLocationPingViewOptions.size() != 0){
+            ArrayList<DayOptions> dayOptionsArrayList = new ArrayList<DayOptions>(userLocationPingViewOptions.first().getDayOptionsArrayList());
 
-        ArrayList<DayOptions> dayOptionsArrayList = new ArrayList<DayOptions>(userLocationPingViewOptions.first().getDayOptionsArrayList());
+            Toast.makeText(this, String.valueOf(dayOptionsArrayList.size()), Toast.LENGTH_SHORT).show();
 
-        days = (ListView) findViewById(R.id.daysList);
+            days = (ListView) findViewById(R.id.daysList);
 
-        DaysOfTheWeekSettingsAdapter daysOfTheWeekSettingsAdapter = new DaysOfTheWeekSettingsAdapter(
-                this, R.layout.listview_day_setting_row, dayOptionsArrayList);
+            DaysOfTheWeekSettingsAdapter daysOfTheWeekSettingsAdapter = new DaysOfTheWeekSettingsAdapter(
+                    this, R.layout.listview_day_setting_row, dayOptionsArrayList);
 
-        days.setAdapter(daysOfTheWeekSettingsAdapter);
+            days.setAdapter(daysOfTheWeekSettingsAdapter);
+        } else {
+            Toast.makeText(this, "The length of userLocationPing si 0", Toast.LENGTH_SHORT).show();
+        }
     }
 }
