@@ -69,8 +69,7 @@ import kylem.privatehobbyspot.entities.User;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback,
         GoogleMap.OnMarkerDragListener, GoogleMap.OnMarkerClickListener,
-        LocationListener, AddLocation.OnFragmentInteractionListener,
-        LocationDetails.OnFragmentInteractionListener {
+        LocationListener, AddLocation.OnFragmentInteractionListener {
 
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 0;
 
@@ -149,21 +148,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         Intent intent = getIntent();
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
-
         }
 
     }
 
     @Override
+    protected void onResume(){
+        super.onResume();
+        getUserLocationPings();
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.options_menu, menu);
-
         MenuItem item = menu.findItem(R.id.action_search);
-
         // Associate search config with the searchView
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         searchView.setMenuItem(item);
-
         return true;
     }
 
@@ -404,7 +405,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         confirmLocationButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: 8/28/2017 confirm the location of the marker on the map and open the add locations fragment
                 LatLng markerPos = newLocationMarker.getPosition();
                 AddLocation addLocationFragment = AddLocation.newInstance(markerPos);
                 android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
@@ -505,6 +505,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     public void getUserLocationPings() {
+        //making sure to empty the arraylist before adding the data to it.
+        userLocations.clear();
         Realm realm = Realm.getDefaultInstance();
         RealmQuery<User> query = realm.where(User.class);
         query.equalTo("Email", userEmail);

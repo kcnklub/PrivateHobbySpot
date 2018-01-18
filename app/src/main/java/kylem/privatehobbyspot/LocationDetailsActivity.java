@@ -30,8 +30,6 @@ public class LocationDetailsActivity extends AppCompatActivity {
     private static final String TAG = "Location Details";
     private static final String USER_IS_CREATOR = "User Is Creator";
 
-
-    // TODO: Rename and change types of parameters
     private int mlocationId;
     private String mlocationName;
     private String mlocationDescription;
@@ -142,6 +140,37 @@ public class LocationDetailsActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(getApplicationContext(), "Input Blank", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        deletePingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Realm realm = Realm.getDefaultInstance();
+
+                // The Ping itself.
+                RealmResults<LocationPing> locationPingsResults = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
+                LocationPing locationPing = locationPingsResults.first();
+
+                //all view options for the specific ping
+                RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class).equalTo("LocationPingID", mlocationId).findAll();
+
+                realm.beginTransaction();
+                // delete the ping itself;
+                locationPing.deleteFromRealm();
+
+                // delete the view and dayoptions objects that are tied to the location ping.
+                for(UserLocationPingViewOptions userLocationPingViewOptions : userLocationPingViewOptionsRealmResults){
+                    for(DayOptions dayOptions : userLocationPingViewOptions.getDayOptionsArrayList()){
+                        dayOptions.deleteFromRealm();
+                    }
+                    userLocationPingViewOptions.deleteFromRealm();
+                }
+                realm.commitTransaction();
+
+                realm.close();
+
+                finish();
             }
         });
 

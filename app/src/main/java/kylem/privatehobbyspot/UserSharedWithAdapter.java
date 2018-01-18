@@ -103,7 +103,7 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
         holder.settingsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //TODO: start the user options activity.
+                // start the user options activity.
                 Intent intent = new Intent((LocationDetailsActivity) context, UserViewOptionsActivity.class);
                 intent.putExtra("LocationID", ((LocationDetailsActivity) context).getMlocationId());
                 intent.putExtra("userEmail", data.get(position).getEmail());

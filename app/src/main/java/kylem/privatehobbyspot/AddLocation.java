@@ -73,11 +73,8 @@ public class AddLocation extends android.app.Fragment {
         this.description = (EditText) getView().findViewById(R.id.description);
         this.locationType = (RadioGroup) getView().findViewById(R.id.locationType);
         setOnClickListeners();
-
-
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -102,7 +99,6 @@ public class AddLocation extends android.app.Fragment {
     }
 
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 
