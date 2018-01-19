@@ -72,4 +72,21 @@
     <string name="Biking">Biking</string>
     <string name="Hiking">Hiking</string>
     <string name="Other">Other</string>
+
+    <string name="prompt_username">User Name</string>
+    <string name="prompt_password">Password</string>
+
+    <string name="action_sign_in">Log In</string>
+    <string name="action_log_in_short">Sign in</string>
+
+    <string name="error_invalid_password">Password required</string>
+    <string name="error_incorrect_password">Password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="facebook_app_id">1552514648171806</string>
+    <string name="activity_register_label">Register Activity</string>
+    <string name="prompt_password_conformation">Confirmation</string>
+    <string name="action_register">Register</string>
+    <string name="action_register_short">Register</string>
+    <string name="sumbit_location">Save Location</string>
+
 </resources>

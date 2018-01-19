@@ -37,14 +37,18 @@
                 android:resource="@xml/searchable" />
         </activity>
         <activity
-            android:name=".SignIn"
+            android:name=".SignInActivity"
             android:label="@string/title_activity_sign_in"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".RegisterActivity"
+            android:label="@string/activity_register_label" />
 
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
@@ -57,13 +61,22 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id" />
 
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".LocationDetailsActivity" />
-        <activity android:name=".UserViewOptionsActivity"></activity>
+        <activity android:name=".UserViewOptionsActivity" />
+
+        <!-- Overwrite label attribute -->
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:label="@string/app_name" />
+        <activity android:name=".AddLocationActivity"></activity>
     </application>
 
 </manifest>

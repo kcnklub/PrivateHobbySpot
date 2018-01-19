@@ -2,7 +2,6 @@ package kylem.privatehobbyspot;
 
 import android.Manifest;
 import android.annotation.TargetApi;
-import android.app.Dialog;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -14,55 +13,39 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.annotation.RequiresPermission;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 
 import com.github.clans.fab.FloatingActionMenu;
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
-import java.net.URL;
 import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
 
@@ -79,8 +62,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     public final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
     private MapFragment mMapFragment;
     private String TAG = "Main Activity";
-
-    private GoogleApiClient mGoogleApiClient;
 
     private GoogleMap mMap;
     private LocationManager mLocationManager;
@@ -103,21 +84,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private boolean isLookingAtMap;
     private Marker newLocationMarker;
 
-    private String username;
-    private String userEmail;
     public ArrayList<LocationPing> userLocations;
+
+    private SyncUser user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Material Search");
-        toolbar.setTitleTextColor(Color.parseColor("#FFFFFF"));
-
-        searchView = (MaterialSearchView) findViewById(R.id.search_view);
-        //Add the map activity fragment to this activity.
 
         mMapFragment = MapFragment.newInstance();
         android.app.FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
@@ -126,29 +100,89 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         getInitLocation(getApplicationContext());
         isLookingAtMap = true;
 
-        mGoogleApiClient = ((PrivateHobbySpot) getApplication()).getmGoogleApiClient();
-        username = getIntent().getStringExtra("username");
-        userEmail = getIntent().getStringExtra("userEmail");
-        if (username != null) {
-            Log.d(TAG, username);
-        }
-
+        user = SyncUser.currentUser();
 
         floatingActionMenu = (FloatingActionMenu) findViewById(R.id.fab);
         addLocationButton = (FloatingActionButton) findViewById(R.id.add_location);
+        addLocationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isLookingAtMap) {
+                    markerOptions = new MarkerOptions()
+                            .position(new LatLng(userUpdatedLocation.getLatitude(), userUpdatedLocation.getLongitude()))
+                            .title("You are here")
+                            .draggable(true);
+                    newLocationMarker = mMap.addMarker(markerOptions);
+                    floatingActionMenu.close(false);
+                    isLookingAtMap = false;
+                    floatingActionMenu.setVisibility(View.GONE);
+                    confirmLocationButton.setVisibility(View.VISIBLE);
+                    cancelLocationButton.setVisibility(View.VISIBLE);
+                } else {
+                    Context context = getApplicationContext();
+                    int duration = Toast.LENGTH_SHORT;
+                    Toast toast = Toast.makeText(context, "You already have a marker on the map.", duration);
+                    toast.show();
+                    floatingActionMenu.close(true);
+                }
+
+            }
+        });
+
         settingsButton = (FloatingActionButton) findViewById(R.id.settings);
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+            }
+        });
+
         signoutButton = (FloatingActionButton) findViewById(R.id.sign_out_button);
-        confirmLocationButton = (FloatingActionButton) findViewById(R.id.confirmLocationButton);
-        cancelLocationButton = (FloatingActionButton) findViewById(R.id.cancelLocationButton);
+        signoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                UserManager.logoutActiveUser();
+                Intent signInActivity = new Intent(MainActivity.this, SignInActivity.class);
+                startActivity(signInActivity);
+            }
+        });
+
         viewSettingsButton = (FloatingActionButton) findViewById(R.id.view_settings_button);
-        setClickListeners();
+        viewSettingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                startActivity(intent);
+            }
+        });
 
-        userLocations = new ArrayList<LocationPing>();
+        cancelLocationButton = (FloatingActionButton) findViewById(R.id.cancelLocationButton);
+        cancelLocationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                newLocationMarker.remove();
+                confirmLocationButton.setVisibility(View.GONE);
+                cancelLocationButton.setVisibility(View.GONE);
+                floatingActionMenu.setVisibility(View.VISIBLE);
+                isLookingAtMap = true;
+            }
+        });
 
-        Intent intent = getIntent();
-        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
-            String query = intent.getStringExtra(SearchManager.QUERY);
-        }
+        confirmLocationButton = (FloatingActionButton) findViewById(R.id.confirmLocationButton);
+        confirmLocationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LatLng markerPos = newLocationMarker.getPosition();
+                AddLocation addLocationFragment = AddLocation.newInstance(markerPos);
+                android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
+                transaction.replace(R.id.fragment_container, addLocationFragment);
+                transaction.addToBackStack(null);
+                transaction.commit();
+                cancelLocationButton.setVisibility(View.GONE);
+                confirmLocationButton.setVisibility(View.GONE);
+            }
+        });
 
     }
 
@@ -184,33 +218,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
-    }
-
-    public void signOut() {
-        mGoogleApiClient.connect();
-        mGoogleApiClient.registerConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-            @Override
-            public void onConnected(@Nullable Bundle bundle) {
-                if (mGoogleApiClient.isConnected()) {
-                    Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback(new ResultCallback<Status>() {
-                        @Override
-                        public void onResult(@NonNull Status status) {
-                            if (status.isSuccess()) {
-                                Log.d(TAG, "user is Logged out");
-                                Intent intent = new Intent(MainActivity.this, SignIn.class);
-                                startActivity(intent);
-                                finish();
-                            }
-                        }
-                    });
-                }
-            }
-
-            @Override
-            public void onConnectionSuspended(int i) {
-
-            }
-        });
     }
 
     @Override
@@ -275,11 +282,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         for (LocationPing location : userLocations) {
             if (location.getMarkerId() == markerId) {
                 Realm realm = Realm.getDefaultInstance();
-                RealmResults<User> userCreated = realm.where(User.class).equalTo("Email", userEmail).findAll();
+                RealmResults<User> userCreated = realm.where(User.class).equalTo("Id", user.getIdentity()).findAll();
                 User user = userCreated.first();
-                boolean isUserCreator = location.getCreatedByUser().getEmail().equals(user.getEmail());
-                Log.d(TAG, location.getCreatedByUser().getEmail());
-                Log.d(TAG, user.getEmail());
+                boolean isUserCreator = location.getCreatedByUser().getId().equals(user.getId());
+                Log.d(TAG, location.getCreatedByUser().getId());
+                Log.d(TAG, user.getId());
                 Log.d(TAG, String.valueOf(isUserCreator));
                 //LocationDetails locationDetails = LocationDetails
                 //        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId(), isUserCreator);
@@ -352,83 +359,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    public void setClickListeners() {
-
-        addLocationButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isLookingAtMap) {
-                    markerOptions = new MarkerOptions()
-                            .position(new LatLng(userUpdatedLocation.getLatitude(), userUpdatedLocation.getLongitude()))
-                            .title("You are here")
-                            .draggable(true);
-                    newLocationMarker = mMap.addMarker(markerOptions);
-                    floatingActionMenu.close(false);
-                    isLookingAtMap = false;
-                    floatingActionMenu.setVisibility(View.GONE);
-                    confirmLocationButton.setVisibility(View.VISIBLE);
-                    cancelLocationButton.setVisibility(View.VISIBLE);
-                } else {
-                    Context context = getApplicationContext();
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, "You already have a marker on the map.", duration);
-                    toast.show();
-                    floatingActionMenu.close(true);
-                }
-
-            }
-        });
-
-        settingsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        viewSettingsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        signoutButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                signOut();
-            }
-        });
-
-        confirmLocationButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                LatLng markerPos = newLocationMarker.getPosition();
-                AddLocation addLocationFragment = AddLocation.newInstance(markerPos);
-                android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
-                transaction.replace(R.id.fragment_container, addLocationFragment);
-                transaction.addToBackStack(null);
-                transaction.commit();
-                cancelLocationButton.setVisibility(View.GONE);
-                confirmLocationButton.setVisibility(View.GONE);
-            }
-        });
-
-        cancelLocationButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                newLocationMarker.remove();
-                confirmLocationButton.setVisibility(View.GONE);
-                cancelLocationButton.setVisibility(View.GONE);
-                floatingActionMenu.setVisibility(View.VISIBLE);
-                isLookingAtMap = true;
-            }
-        });
-
-    }
-
     @Override
     public void onLocationChanged(Location location) {
         userUpdatedLocation = location;
@@ -469,7 +399,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    signOut();
+                    user.logout();
+                    Intent signInActivity = new Intent(MainActivity.this, SignInActivity.class);
+                    startActivity(signInActivity);
                 }
             });
             builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -482,14 +414,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             AlertDialog dialog = builder.create();
             dialog.show();
         }
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getUserEmail() {
-        return userEmail;
     }
 
     public FloatingActionMenu getFloatingActionMenu() {
@@ -506,10 +430,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     public void getUserLocationPings() {
         //making sure to empty the arraylist before adding the data to it.
-        userLocations.clear();
+        userLocations = new ArrayList<LocationPing>();
         Realm realm = Realm.getDefaultInstance();
         RealmQuery<User> query = realm.where(User.class);
-        query.equalTo("Email", userEmail);
+        query.equalTo("Id", user.getIdentity());
         RealmResults<User> user = query.findAll();
         if (user.size() == 1) {
             User currentUser = user.first();
