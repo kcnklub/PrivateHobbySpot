@@ -10,6 +10,8 @@ import android.widget.RadioGroup;
 import com.google.android.gms.maps.model.LatLng;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
+import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.LocationPing;
 
 public class AddLocationActivity extends AppCompatActivity {
@@ -38,7 +40,18 @@ public class AddLocationActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Realm realm = Realm.getDefaultInstance();
-                LocationPing ping = realm.createObject(LocationPing.class, )
+                final long locationPingCount = realm.where(LocationPing.class).count();
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        LocationPing ping = realm.createObject(LocationPing.class, locationPingCount + 1);
+                        ping.setCreatedByUser(SyncUser.currentUser().getIdentity());
+                        ping.setName(name.getText().toString());
+                        ping.setDescription(description.getText().toString());
+                        ping.setLatitude(latLngToAdd.latitude);
+                        ping.setLongtitude(latLngToAdd.longitude);
+                    }
+                });
             }
         });
 

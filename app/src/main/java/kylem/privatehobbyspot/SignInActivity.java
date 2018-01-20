@@ -224,6 +224,7 @@ public class SignInActivity extends AppCompatActivity implements SyncUser.Callba
         Log.d(TAG, "For some Reason we are here.");
         final Realm realm = Realm.getDefaultInstance();
         try {
+
         } finally {
             realm.close();
         }

@@ -21,6 +21,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.SignInButton;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 import io.realm.SyncCredentials;
 import io.realm.ObjectServerError;
 import io.realm.SyncUser;
@@ -79,16 +80,24 @@ public class RegisterActivity extends AppCompatActivity implements SyncUser.Call
                 final SyncCredentials credentials = SyncCredentials.facebook(loginResult.getAccessToken().getToken());
 
                 Realm realm = Realm.getDefaultInstance();
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        User savedUser = realm.createObject(User.class, credentials.getUserIdentifier());
-                        savedUser.setDisplayName(credentials.getIdentityProvider());
+                try{
+                    RealmResults<User> checkUser = realm.where(User.class).equalTo("DisplayName", credentials.getIdentityProvider()).findAll();
+                    if(checkUser.isEmpty()){
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                User savedUser = realm.createObject(User.class, credentials.getUserIdentifier());
+                                savedUser.setDisplayName(credentials.getIdentityProvider());
+                            }
+                        });
+                        SyncUser.loginAsync(credentials, AUTH_URL, RegisterActivity.this);
+                    } else {
+                        Toast.makeText(RegisterActivity.this, "This email has already been used.", Toast.LENGTH_SHORT).show();
                     }
-                });
-                realm.close();
+                } finally {
+                    realm.close();
+                }
 
-                SyncUser.loginAsync(credentials, AUTH_URL, RegisterActivity.this);
             }
         };
 
@@ -99,18 +108,25 @@ public class RegisterActivity extends AppCompatActivity implements SyncUser.Call
                 UserManager.setAuthMode(UserManager.AUTH_MODE.GOOGLE);
                 GoogleSignInAccount acct = result.getSignInAccount();
                 final SyncCredentials credentials = SyncCredentials.google(acct.getIdToken());
-
                 Realm realm = Realm.getDefaultInstance();
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        User savedUser = realm.createObject(User.class, credentials.getUserIdentifier());
-                        savedUser.setDisplayName(credentials.getIdentityProvider());
-                    }
-                });
-                realm.close();
+                try{
+                    RealmResults<User> checkUser = realm.where(User.class).equalTo("DisplayName", credentials.getIdentityProvider()).findAll();
+                    if(checkUser.isEmpty()){
+                        realm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                User savedUser = realm.createObject(User.class, credentials.getUserIdentifier());
+                                savedUser.setDisplayName(credentials.getIdentityProvider());
+                            }
+                        });
+                        SyncUser.loginAsync(credentials, AUTH_URL, RegisterActivity.this);
 
-                SyncUser.loginAsync(credentials, AUTH_URL, RegisterActivity.this);
+                    } else {
+                        Toast.makeText(RegisterActivity.this, "You have already used this google account to register before", Toast.LENGTH_SHORT).show();
+                    }
+                } finally {
+                    realm.close();
+                }
             }
         };
     }
@@ -160,35 +176,47 @@ public class RegisterActivity extends AppCompatActivity implements SyncUser.Call
         if (cancel) {
             focusView.requestFocus();
         } else {
-            showProgress(true);
-            SyncUser.loginAsync(SyncCredentials.usernamePassword(username, password, true), PrivateHobbySpot.AUTH_URL, new SyncUser.Callback<SyncUser>() {
-                @Override
-                public void onSuccess(final SyncUser user) {
-                    Realm realm = Realm.getDefaultInstance();
-                    realm.executeTransaction(new Realm.Transaction() {
+            Realm realm = Realm.getDefaultInstance();
+            try{
+                RealmResults<User> checkUser = realm.where(User.class).equalTo("DisplayName", username).findAll();
+                if(checkUser.isEmpty()){
+                    showProgress(true);
+                    SyncUser.loginAsync(SyncCredentials.usernamePassword(username, password, true), PrivateHobbySpot.AUTH_URL, new SyncUser.Callback<SyncUser>() {
                         @Override
-                        public void execute(Realm realm) {
-                            User savedUser = realm.createObject(User.class, user.getIdentity());
-                            savedUser.setDisplayName(username);
+                        public void onSuccess(final SyncUser user) {
+                            Realm realm = Realm.getDefaultInstance();
+                            realm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    User savedUser = realm.createObject(User.class, user.getIdentity());
+                                    savedUser.setDisplayName(username);
+                                }
+                            });
+                            realm.close();
+
+                            registrationComplete(user);
+                        }
+
+                        @Override
+                        public void onError(ObjectServerError error) {
+                            showProgress(false);
+                            String errorMsg;
+                            switch (error.getErrorCode()) {
+                                case EXISTING_ACCOUNT: errorMsg = "Account already exists"; break;
+                                default:
+                                    errorMsg = error.toString();
+                            }
+                            Toast.makeText(RegisterActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                         }
                     });
-                    realm.close();
-
-                    registrationComplete(user);
+                } else {
+                    Toast.makeText(this, "User with that email already exists", Toast.LENGTH_SHORT).show();
                 }
+            } finally {
+                realm.close();
+            }
 
-                @Override
-                public void onError(ObjectServerError error) {
-                    showProgress(false);
-                    String errorMsg;
-                    switch (error.getErrorCode()) {
-                        case EXISTING_ACCOUNT: errorMsg = "Account already exists"; break;
-                        default:
-                            errorMsg = error.toString();
-                    }
-                    Toast.makeText(RegisterActivity.this, errorMsg, Toast.LENGTH_LONG).show();
-                }
-            });
+
         }
     }
 

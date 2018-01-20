@@ -29,12 +29,12 @@ public class UserViewOptionsActivity extends AppCompatActivity {
 
         Realm realm = Realm.getDefaultInstance();
 
-        RealmResults<User> user = realm.where(User.class).equalTo("Email", userEmail).findAll();
+        RealmResults<User> user = realm.where(User.class).equalTo("Id", userEmail).findAll();
         User userInQuestion = user.first();
 
 
         RealmResults<UserLocationPingViewOptions> userLocationPingViewOptions = realm.where(UserLocationPingViewOptions.class)
-                .equalTo("UserID", userInQuestion.getEmail())
+                .equalTo("UserID", userInQuestion.getId())
                 .equalTo("LocationPingID", locationID)
                 .findAll();
 

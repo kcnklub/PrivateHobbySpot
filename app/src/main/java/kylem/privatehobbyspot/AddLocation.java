@@ -55,7 +55,7 @@ public class AddLocation extends android.app.Fragment {
         super.onCreate(savedInstanceState);
         latLngToAdd = staticLatLngToAdd;
         MainActivity mainActivity = (MainActivity) getActivity();
-        userEmail = mainActivity.getUserEmail();
+        //userEmail = mainActivity.getUserEmail();
     }
 
     @Override
@@ -117,7 +117,7 @@ public class AddLocation extends android.app.Fragment {
                                   long numberOfPings = realm.where(LocationPing.class).count();
                                   LocationPing ping = realm.createObject(LocationPing.class, numberOfPings + 1);
                                   ping.setName(AddLocation.this.name.getText().toString());
-                                  ping.setCreatedByUser(currUser.first());
+                                  //ping.setCreatedByUser(currUser.first());
                                   ping.setLatitude(latLngToAdd.latitude);
                                   ping.setLongtitude(latLngToAdd.longitude);
                                   ping.setDescription(AddLocation.this.description.getText().toString());

@@ -45,6 +45,7 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import io.realm.SyncCredentials;
 import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
@@ -92,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent signInData = getIntent();
+
 
         mMapFragment = MapFragment.newInstance();
         android.app.FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
@@ -284,12 +288,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Realm realm = Realm.getDefaultInstance();
                 RealmResults<User> userCreated = realm.where(User.class).equalTo("Id", user.getIdentity()).findAll();
                 User user = userCreated.first();
-                boolean isUserCreator = location.getCreatedByUser().getId().equals(user.getId());
-                Log.d(TAG, location.getCreatedByUser().getId());
+                boolean isUserCreator = location.getCreatedByUser().equals(user.getId());
+                Log.d(TAG, location.getCreatedByUser());
                 Log.d(TAG, user.getId());
                 Log.d(TAG, String.valueOf(isUserCreator));
-                //LocationDetails locationDetails = LocationDetails
-                //        .newInstance(location.getId(), location.GetName(), location.GetDescription(), location.getMarkerId(), isUserCreator);
                 Intent intent = new Intent(this, LocationDetailsActivity.class);
                 intent.putExtra("locationID", location.getId());
                 intent.putExtra("locationName", location.GetName());
@@ -297,10 +299,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 intent.putExtra("locationMarkerID", location.getMarkerId());
                 intent.putExtra("isUserCreator", isUserCreator);
                 startActivity(intent);
-                //android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
-                //transaction.replace(R.id.fragment_container, locationDetails);
-                //transaction.addToBackStack(null);
-                //transaction.commit();
             }
         }
         return true;

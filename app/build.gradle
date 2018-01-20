@@ -6,7 +6,7 @@ android {
         config {
             keyAlias 'debug'
             keyPassword 'jackman01'
-            storeFile file('C:/Users/kylem/.android/android.jks')
+            storeFile file('C:/Users/Kyle/.android/android.jks')
             storePassword 'jackman01'
         }
     }

@@ -73,7 +73,7 @@ public class LocationDetailsActivity extends AppCompatActivity {
         } else {
             Realm realm = Realm.getDefaultInstance();
             RealmResults<LocationPing> locationPingRealmResults = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
-            final ArrayList<User> userSharedList = new ArrayList<User>(locationPingRealmResults.first().getUsersThatCanViewThisLocationPing());
+            final ArrayList<String> userSharedList = new ArrayList<String>(locationPingRealmResults.first().getUsersThatCanViewThisLocationPing());
 
             UserSharedWithAdapter adapter = new UserSharedWithAdapter(
                     this, R.layout.listview_item_row,
@@ -111,12 +111,12 @@ public class LocationDetailsActivity extends AppCompatActivity {
                         RealmResults<LocationPing> Query = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
                         LocationPing location = Query.first();
                         realm.beginTransaction();
-                        location.getUsersThatCanViewThisLocationPing().add(friendUser);
+                        location.getUsersThatCanViewThisLocationPing().add(friendUser.getId());
 
                         RealmQuery<UserLocationPingViewOptions> query = realm.where(UserLocationPingViewOptions.class);
 
                         UserLocationPingViewOptions userLocationPingViewOptions = realm.createObject(UserLocationPingViewOptions.class, query.count() + 1 );
-                        userLocationPingViewOptions.setUserID(friendUser.getEmail());
+                        userLocationPingViewOptions.setUserID(friendUser.getId());
                         userLocationPingViewOptions.setLocationPingID(location.getId());
 
                         RealmQuery<DayOptions> dayOptionsRealmQuery = realm.where(DayOptions.class);

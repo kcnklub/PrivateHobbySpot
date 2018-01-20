@@ -24,7 +24,7 @@ public class LocationPing extends RealmObject {
     @Index
     private int Id;
 
-    private User createdByUser;
+    private String createdByUserID;
 
     private String Name;
 
@@ -34,7 +34,7 @@ public class LocationPing extends RealmObject {
 
     private int LocationType;
 
-    private RealmList<User> usersThatCanViewThisLocationPing;
+    private RealmList<String> usersThatCanViewThisLocationPing;
 
     @Ignore
     private int MarkerId;
@@ -47,9 +47,9 @@ public class LocationPing extends RealmObject {
         LocationType = -1;
     }
 
-    public LocationPing(String New_Name, User creationUser, double New_Long, double New_Lat, String New_Desc, int New_Type, int New_Id) {
+    public LocationPing(String New_Name, String creationUserID, double New_Long, double New_Lat, String New_Desc, int New_Type, int New_Id) {
         Name = New_Name;
-        createdByUser = creationUser;
+        createdByUserID = creationUserID;
         Longtitude = New_Long;
         Latitude = New_Lat;
         Description = New_Desc;
@@ -68,8 +68,8 @@ public class LocationPing extends RealmObject {
         Name = name;
     }
 
-    public void setCreatedByUser(User createdByUser) {
-        this.createdByUser = createdByUser;
+    public void setCreatedByUser(String createdByUser) {
+        this.createdByUserID = createdByUser;
     }
 
     public void setLongtitude(double longtitude) {
@@ -100,8 +100,8 @@ public class LocationPing extends RealmObject {
         return Name;
     }
 
-    public User getCreatedByUser() {
-        return createdByUser;
+    public String getCreatedByUser() {
+        return createdByUserID;
     }
 
     public double GetLongtitude(){
@@ -120,7 +120,7 @@ public class LocationPing extends RealmObject {
         return LocationType;
     }
 
-    public RealmList<User> getUsersThatCanViewThisLocationPing() {
+    public RealmList<String> getUsersThatCanViewThisLocationPing() {
         return usersThatCanViewThisLocationPing;
     }
 }
