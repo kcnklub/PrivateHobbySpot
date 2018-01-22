@@ -1,5 +1,6 @@
 package kylem.privatehobbyspot;
 
+import android.location.Location;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,10 +13,16 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
+import io.realm.ObjectServerError;
+import io.realm.PermissionManager;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import io.realm.SyncUser;
+import io.realm.permissions.AccessLevel;
+import io.realm.permissions.PermissionRequest;
+import io.realm.permissions.UserCondition;
 import kylem.privatehobbyspot.entities.DayOptions;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
@@ -72,8 +79,8 @@ public class LocationDetailsActivity extends AppCompatActivity {
             usersSharedWith.setVisibility(View.INVISIBLE);
         } else {
             Realm realm = Realm.getDefaultInstance();
-            RealmResults<LocationPing> locationPingRealmResults = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
-            final ArrayList<String> userSharedList = new ArrayList<String>(locationPingRealmResults.first().getUsersThatCanViewThisLocationPing());
+            RealmResults<LocationPing> locationPingRealmResults = realm.where(LocationPing.class).equalTo(LocationPing.LOCATION_PING_ID, mlocationId).findAll();
+            final ArrayList<User> userSharedList = new ArrayList<User>(locationPingRealmResults.first().getUsersThatCanViewThisLocationPing());
 
             UserSharedWithAdapter adapter = new UserSharedWithAdapter(
                     this, R.layout.listview_item_row,
@@ -103,15 +110,39 @@ public class LocationDetailsActivity extends AppCompatActivity {
             public void onClick(View v){
                 String input = addUserToView.getText().toString();
                 if(!input.equals("")){
+
+                    SyncUser user = SyncUser.currentUser();
+                    PermissionManager pm = user.getPermissionManager();
+
+                    UserCondition condition = UserCondition.username(input);
+                    AccessLevel accessLevel = AccessLevel.READ;
+                    PermissionRequest request = new PermissionRequest(condition, PrivateHobbySpot.REALM_URL, accessLevel);
+
+                    pm.applyPermissions(request, new PermissionManager.ApplyPermissionsCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "we got it shared");
+                        }
+
+                        @Override
+                        public void onError(ObjectServerError error) {
+                            Log.d(TAG, "we fucked up i think");
+                        }
+                    });
+
                     Log.d(TAG, input);
                     Realm realm = Realm.getDefaultInstance();
-                    RealmResults<User> friend = realm.where(User.class).equalTo("Email", input).findAll();
+                    RealmResults<User> friend = realm.where(User.class)
+                            .equalTo(User.USER_ID, input)
+                            .findAll();
                     if(friend.size() != 0){
                         User friendUser = friend.first();
-                        RealmResults<LocationPing> Query = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
+                        RealmResults<LocationPing> Query = realm.where(LocationPing.class)
+                                .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
+                                .findAll();
                         LocationPing location = Query.first();
                         realm.beginTransaction();
-                        location.getUsersThatCanViewThisLocationPing().add(friendUser.getId());
+                        location.getUsersThatCanViewThisLocationPing().add(friendUser);
 
                         RealmQuery<UserLocationPingViewOptions> query = realm.where(UserLocationPingViewOptions.class);
 
@@ -149,11 +180,15 @@ public class LocationDetailsActivity extends AppCompatActivity {
                 Realm realm = Realm.getDefaultInstance();
 
                 // The Ping itself.
-                RealmResults<LocationPing> locationPingsResults = realm.where(LocationPing.class).equalTo("Id", mlocationId).findAll();
+                RealmResults<LocationPing> locationPingsResults = realm.where(LocationPing.class)
+                        .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
+                        .findAll();
                 LocationPing locationPing = locationPingsResults.first();
 
                 //all view options for the specific ping
-                RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class).equalTo("LocationPingID", mlocationId).findAll();
+                RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class)
+                        .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_LOCATION_ID, mlocationId)
+                        .findAll();
 
                 realm.beginTransaction();
                 // delete the ping itself;

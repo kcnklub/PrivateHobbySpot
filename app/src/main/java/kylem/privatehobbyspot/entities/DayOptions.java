@@ -9,6 +9,13 @@ import io.realm.annotations.PrimaryKey;
 
 public class DayOptions extends RealmObject{
 
+    public static final String DAY_OPTIONS_ID = "id";
+    public static final String DAY_OPTIONS_CAN_VIEW_ALL_DAY = "canViewAllDay";
+    public static final String DAY_OPTIONS_HOUR_START = "hourStart";
+    public static final String DAY_OPTIONS_IS_AM_START = "isAMStart";
+    public static final String DAY_OPTIONS_HOUR_STOP = "hourStop";
+    public static final String DAY_OPTIONS_IS_AM_STOP = "isAMStop";
+
     @PrimaryKey
     private int id;
 

@@ -18,6 +18,11 @@ import io.realm.annotations.PrimaryKey;
 
 public class UserLocationPingViewOptions extends RealmObject {
 
+    public static final String VIEW_OPTIONS_ID = "id";
+    public static final String VIEW_OPTIONS_USER_ID = "UserID";
+    public static final String VIEW_OPTIONS_LOCATION_ID = "LocationPingID";
+    public static final String VIEW_OPTIONS_DAY_LIST = "dayOptionsArrayList";
+
     @PrimaryKey
     private int id;
 

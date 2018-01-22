@@ -1,5 +1,6 @@
 package kylem.privatehobbyspot;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -13,6 +14,7 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.LocationPing;
+import kylem.privatehobbyspot.entities.User;
 
 public class AddLocationActivity extends AppCompatActivity {
 
@@ -40,21 +42,38 @@ public class AddLocationActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Realm realm = Realm.getDefaultInstance();
-                final long locationPingCount = realm.where(LocationPing.class).count();
-                realm.executeTransaction(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        LocationPing ping = realm.createObject(LocationPing.class, locationPingCount + 1);
-                        ping.setCreatedByUser(SyncUser.currentUser().getIdentity());
-                        ping.setName(name.getText().toString());
-                        ping.setDescription(description.getText().toString());
-                        ping.setLatitude(latLngToAdd.latitude);
-                        ping.setLongtitude(latLngToAdd.longitude);
-                    }
-                });
+                try{
+                    final long locationPingCount = realm.where(LocationPing.class).count();
+                    realm.executeTransaction(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+                            LocationPing ping = realm.createObject(LocationPing.class, locationPingCount + 1);
+                            ping.setCreatedByUser(SyncUser.currentUser().getIdentity());
+                            ping.setName(name.getText().toString());
+                            ping.setDescription(description.getText().toString());
+                            ping.setLatitude(latLngToAdd.latitude);
+                            ping.setLongtitude(latLngToAdd.longitude);
+
+                            //Link to user.
+                            User user = realm.where(User.class).equalTo(User.USER_ID, SyncUser.currentUser().getIdentity()).findAll().first();
+                            user.getLocationPings().add(ping);
+
+
+                        }
+                    });
+                } finally {
+                    realm.close();
+                }
+                onBackPressed();
+                finish();
             }
         });
+    }
 
-
+    @Override
+    protected void onStart(){
+        super.onStart();
+        Intent data = getIntent();
+        latLngToAdd = new LatLng(data.getDoubleExtra("Lat", 0), data.getDoubleExtra("Long", 0));
     }
 }

@@ -8,7 +8,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -17,7 +16,6 @@ import android.os.Bundle;
 import android.support.annotation.RequiresPermission;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,12 +39,17 @@ import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
 import java.util.ArrayList;
 
+import io.realm.ObjectServerError;
+import io.realm.PermissionManager;
 import io.realm.Realm;
+import io.realm.RealmAsyncTask;
+import io.realm.RealmConfiguration;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
-import io.realm.SyncCredentials;
+import io.realm.SyncConfiguration;
 import io.realm.SyncUser;
+import io.realm.permissions.Permission;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
 
@@ -105,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         isLookingAtMap = true;
 
         user = SyncUser.currentUser();
+
 
         floatingActionMenu = (FloatingActionMenu) findViewById(R.id.fab);
         addLocationButton = (FloatingActionButton) findViewById(R.id.add_location);
@@ -178,13 +182,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             @Override
             public void onClick(View v) {
                 LatLng markerPos = newLocationMarker.getPosition();
-                AddLocation addLocationFragment = AddLocation.newInstance(markerPos);
-                android.app.FragmentTransaction transaction = getFragmentManager().beginTransaction();
-                transaction.replace(R.id.fragment_container, addLocationFragment);
-                transaction.addToBackStack(null);
-                transaction.commit();
-                cancelLocationButton.setVisibility(View.GONE);
                 confirmLocationButton.setVisibility(View.GONE);
+                cancelLocationButton.setVisibility(View.GONE);
+                Intent addLocationActivity = new Intent(MainActivity.this, AddLocationActivity.class);
+                Log.d(TAG, String.valueOf(markerPos.latitude));
+                Log.d(TAG, String.valueOf(markerPos.longitude));
+                addLocationActivity.putExtra("Lat", markerPos.latitude);
+                addLocationActivity.putExtra("Long", markerPos.longitude);
+                startActivity(addLocationActivity);
             }
         });
 
@@ -193,7 +198,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     @Override
     protected void onResume(){
         super.onResume();
-        getUserLocationPings();
+        floatingActionMenu.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -436,6 +441,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         if (user.size() == 1) {
             User currentUser = user.first();
             RealmList<LocationPing> userSavedLocations = currentUser.getLocationPings();
+            Log.d(TAG, "Number of Locations: " + (String.valueOf(userSavedLocations.size())));
             if (userSavedLocations.size() != 0) {
                 for (LocationPing location : userSavedLocations) {
                     String markerId = mMap.addMarker(new MarkerOptions()
@@ -451,23 +457,55 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         }
 
-        //get the pings that are shared with that user.
-        RealmResults<LocationPing> locations = realm.where(LocationPing.class).findAll();
-        if(locations.size() != 0){
-            for(int i = 0; i < locations.size(); i++){
-                if(locations.get(i).getUsersThatCanViewThisLocationPing().contains(user.first())){
-                    String markerId = mMap.addMarker(new MarkerOptions()
-                            .draggable(false)
-                            .position(new LatLng(locations.get(i).GetLatitude(), locations.get(i).GetLongtitude()))
-                            .title(locations.get(i).GetName())
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
-                    ).getId();
-                    markerId = markerId.substring(1);
-                    int n_markerID = Integer.valueOf(markerId);
-                    locations.get(i).setMarkerId(n_markerID);
-                    userLocations.add(locations.get(i));
+        PermissionManager pm = SyncUser.currentUser().getPermissionManager();
+        pm.getPermissions(new PermissionManager.PermissionsCallback() {
+            @Override
+            public void onSuccess(RealmResults<Permission> permissions) {
+                RealmResults<Permission> p = permissions.where().findAll();
+                for(Permission per : p){
+                    // get the user id of the owner of all realms shared with current user.
+                    String path = per.getPath().substring(1, 33);
+                    Log.d(TAG, path);
+                    if(!path.equals(SyncUser.currentUser().getIdentity())){
+                        SyncConfiguration config = new SyncConfiguration.Builder(SyncUser.currentUser(), PrivateHobbySpot.REALM_URL)
+                                .readOnly()
+                                .name(per.getPath())
+                                .build();
+                        RealmAsyncTask task = Realm.getInstanceAsync(config, new Realm.Callback() {
+                            @Override
+                            public void onSuccess(Realm realm) {
+
+                                RealmResults<LocationPing> locations = realm.where(LocationPing.class).findAll();
+                                if(locations.size() != 0){
+                                    for(int i = 0; i < locations.size(); i++){
+                                        if(locations.get(i).getUsersThatCanViewThisLocationPing().contains(user.first())){
+                                            String markerId = mMap.addMarker(new MarkerOptions()
+                                                    .draggable(false)
+                                                    .position(new LatLng(locations.get(i).GetLatitude(), locations.get(i).GetLongtitude()))
+                                                    .title(locations.get(i).GetName())
+                                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                                            ).getId();
+                                            markerId = markerId.substring(1);
+                                            int n_markerID = Integer.valueOf(markerId);
+                                            locations.get(i).setMarkerId(n_markerID);
+                                            userLocations.add(locations.get(i));
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
                 }
             }
-        }
+
+            @Override
+            public void onError(ObjectServerError error) {
+
+            }
+        });
+
+        //get the pings that are shared with that user.
+
     }
 }

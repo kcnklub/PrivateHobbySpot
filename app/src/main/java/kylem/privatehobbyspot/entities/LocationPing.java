@@ -11,6 +11,15 @@ import io.realm.annotations.PrimaryKey;
 
 public class LocationPing extends RealmObject {
 
+    public static final String LOCATION_PING_ID = "Id";
+    public static final String LOCATION_PING_NAME = "Name";
+    public static final String LOCATION_PING_LONG = "Longtitude";
+    public static final String LOCATION_PING_LAT = "Latitude";
+    public static final String LOCATION_PING_DESCRIPTION = "Description";
+    public static final String LOCATION_PING_TYPE = "LocationType";
+    public static final String LOCATION_PING_USERS_SHARED = "usersThatCanViewThisLocationPing";
+    public static final String LOCATION_PING_MARKER_ID = "MarkerId";
+
     @Ignore
     public static final int LONGBOARDING = 1;
     @Ignore
@@ -34,7 +43,7 @@ public class LocationPing extends RealmObject {
 
     private int LocationType;
 
-    private RealmList<String> usersThatCanViewThisLocationPing;
+    private RealmList<User> usersThatCanViewThisLocationPing;
 
     @Ignore
     private int MarkerId;
@@ -120,7 +129,7 @@ public class LocationPing extends RealmObject {
         return LocationType;
     }
 
-    public RealmList<String> getUsersThatCanViewThisLocationPing() {
+    public RealmList<User> getUsersThatCanViewThisLocationPing() {
         return usersThatCanViewThisLocationPing;
     }
 }

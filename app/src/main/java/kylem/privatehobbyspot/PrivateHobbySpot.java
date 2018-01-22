@@ -17,7 +17,7 @@ public class PrivateHobbySpot extends Application {
     private String TAG = "PrivateHobbySpotApp";
 
     public static final String AUTH_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/auth";
-    public static final String REALM_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/~/realmtasks";
+    public static final String REALM_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/~/PHS";
 
     @Override
     public void onCreate(){

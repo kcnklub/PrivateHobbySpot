@@ -23,10 +23,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.SignInButton;
 import io.realm.ObjectServerError;
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.realm.SyncCredentials;
 import io.realm.SyncUser;
 import kylem.privatehobbyspot.auth.facebook.FacebookAuth;
 import kylem.privatehobbyspot.auth.google.GoogleAuth;
+import kylem.privatehobbyspot.entities.MyMigrations;
 
 import static kylem.privatehobbyspot.PrivateHobbySpot.AUTH_URL;
 
@@ -48,6 +50,13 @@ public class SignInActivity extends AppCompatActivity implements SyncUser.Callba
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
+
+        RealmConfiguration configuration = new RealmConfiguration.Builder()
+                .schemaVersion(0)
+                .migration(new MyMigrations())
+                .build();
+
+        Realm.setDefaultConfiguration(configuration);
 
         usernameView = (AutoCompleteTextView) findViewById (R.id.username);
         passwordView = (EditText) findViewById (R.id.password);
@@ -222,11 +231,5 @@ public class SignInActivity extends AppCompatActivity implements SyncUser.Callba
 
     private static void createInitialDataIfNeeded(){
         Log.d(TAG, "For some Reason we are here.");
-        final Realm realm = Realm.getDefaultInstance();
-        try {
-
-        } finally {
-            realm.close();
-        }
     }
 }

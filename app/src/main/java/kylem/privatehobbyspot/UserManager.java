@@ -2,10 +2,14 @@ package kylem.privatehobbyspot;
 
 import com.facebook.login.LoginManager;
 
-import io.realm.Case;
 import io.realm.Realm;
 import io.realm.SyncConfiguration;
 import io.realm.SyncUser;
+import io.realm.annotations.RealmModule;
+import kylem.privatehobbyspot.entities.DayOptions;
+import kylem.privatehobbyspot.entities.LocationPing;
+import kylem.privatehobbyspot.entities.User;
+import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
 
 /**
  * Created by kylem on 1/18/2018.

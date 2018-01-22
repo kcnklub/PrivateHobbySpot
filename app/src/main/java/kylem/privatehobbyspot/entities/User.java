@@ -13,6 +13,10 @@ import kylem.privatehobbyspot.entities.LocationPing;
 
 public class User extends RealmObject implements Serializable{
 
+    public static final String USER_ID = "Id";
+    public static final String USER_DISPLAY_NAME = "displayName";
+    public static final String USER_LOCATION_PINGS = "locationPings";
+
     @PrimaryKey
     private String Id;
 
@@ -28,7 +32,7 @@ public class User extends RealmObject implements Serializable{
 
         displayName = n_displayName;
         Id = n_id;
-        locationPings = null;
+        locationPings = new RealmList<LocationPing>();
     }
 
     public RealmList<LocationPing> getLocationPings() {
