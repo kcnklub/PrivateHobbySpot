@@ -43,7 +43,7 @@ public class LocationPing extends RealmObject {
 
     private int LocationType;
 
-    private RealmList<User> usersThatCanViewThisLocationPing;
+    private RealmList<String> usersThatCanViewThisLocationPing;
 
     @Ignore
     private int MarkerId;
@@ -129,7 +129,7 @@ public class LocationPing extends RealmObject {
         return LocationType;
     }
 
-    public RealmList<User> getUsersThatCanViewThisLocationPing() {
+    public RealmList<String> getUsersThatCanViewThisLocationPing() {
         return usersThatCanViewThisLocationPing;
     }
 }

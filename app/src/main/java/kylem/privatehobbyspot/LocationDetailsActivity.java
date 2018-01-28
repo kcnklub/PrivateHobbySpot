@@ -19,6 +19,7 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import io.realm.SyncConfiguration;
 import io.realm.SyncUser;
 import io.realm.permissions.AccessLevel;
 import io.realm.permissions.PermissionRequest;
@@ -51,19 +52,22 @@ public class LocationDetailsActivity extends AppCompatActivity {
     private Button deletePingButton;
     private ListView usersSharedWith;
 
+    Realm realm;
+    Realm commonRealm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_location_details);
 
+        //get all of the intent data.
         mlocationId = getIntent().getIntExtra("locationID", 0);
         mlocationName = getIntent().getStringExtra("locationName");
         mlocationDescription = getIntent().getStringExtra("locationDescription");
         mlocationType = getIntent().getIntExtra("locationMarkerID", 0);
         mUserIsCreator = getIntent().getBooleanExtra("isUserCreator", false);
 
-
-
+        // reference all of the UI elements
         locationNameView = (TextView) findViewById(R.id.location_name);
         locationDescriptionView = (TextView) findViewById(R.id.location_description);
         locationTypeView = (TextView) findViewById(R.id.location_type);
@@ -73,18 +77,30 @@ public class LocationDetailsActivity extends AppCompatActivity {
         usersSharedWith = (ListView) findViewById(R.id.users_shared_with);
 
         if(!mUserIsCreator){
+            // adjust the UI if the user is not the creator of this point.
             addUserToView.setVisibility(View.INVISIBLE);
             addUserToViewButton.setVisibility(View.INVISIBLE);
             deletePingButton.setVisibility(View.INVISIBLE);
             usersSharedWith.setVisibility(View.INVISIBLE);
         } else {
-            Realm realm = Realm.getDefaultInstance();
+            realm = Realm.getDefaultInstance();
+            //get all of the user ids of the users that this location is shared with.
             RealmResults<LocationPing> locationPingRealmResults = realm.where(LocationPing.class).equalTo(LocationPing.LOCATION_PING_ID, mlocationId).findAll();
-            final ArrayList<User> userSharedList = new ArrayList<User>(locationPingRealmResults.first().getUsersThatCanViewThisLocationPing());
+            final RealmList<String> userSharedList = locationPingRealmResults.first().getUsersThatCanViewThisLocationPing();
+
+            //turn the user ids into the user objects for the adapter.
+            SyncConfiguration config = new SyncConfiguration.Builder(SyncUser.currentUser(), PrivateHobbySpot.COMMON_URL)
+                    .build();
+            commonRealm = Realm.getInstance(config);
+            ArrayList<User> userSharedObjects = new ArrayList<>();
+            for(String user_id : userSharedList){
+                User temp = commonRealm.where(User.class).equalTo(User.USER_ID, user_id).findFirst();
+                userSharedObjects.add(temp);
+            }
 
             UserSharedWithAdapter adapter = new UserSharedWithAdapter(
                     this, R.layout.listview_item_row,
-                    userSharedList);
+                    userSharedObjects);
 
             usersSharedWith.setAdapter(adapter);
         }
@@ -109,68 +125,82 @@ public class LocationDetailsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v){
                 String input = addUserToView.getText().toString();
-                if(!input.equals("")){
+                Realm realm = Realm.getDefaultInstance();
+                try {
+                    if(!input.equals("")){
 
-                    SyncUser user = SyncUser.currentUser();
-                    PermissionManager pm = user.getPermissionManager();
+                        //give the user that the location is being shared with and give them permission to view this user's realm.
+                        SyncUser user = SyncUser.currentUser();
+                        PermissionManager pm = user.getPermissionManager();
+                        UserCondition condition = UserCondition.username(input);
+                        AccessLevel accessLevel = AccessLevel.READ;
+                        PermissionRequest request = new PermissionRequest(condition, PrivateHobbySpot.REALM_URL, accessLevel);
+                        pm.applyPermissions(request, new PermissionManager.ApplyPermissionsCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Log.d(TAG, "we got it shared");
+                            }
 
-                    UserCondition condition = UserCondition.username(input);
-                    AccessLevel accessLevel = AccessLevel.READ;
-                    PermissionRequest request = new PermissionRequest(condition, PrivateHobbySpot.REALM_URL, accessLevel);
+                            @Override
+                            public void onError(ObjectServerError error) {
+                                Log.d(TAG, "we fucked up i think");
+                            }
+                        });
 
-                    pm.applyPermissions(request, new PermissionManager.ApplyPermissionsCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Log.d(TAG, "we got it shared");
-                        }
+                        // add the url to this users realm to the user that this location is being shared with.
+                        final User shareUser = commonRealm.where(User.class).equalTo(User.USER_DISPLAY_NAME, input).findFirst();
+                        commonRealm.executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                shareUser.getSharedRealmUrls().add("/" + SyncUser.currentUser().getIdentity() + "/PHS");
+                            }
+                        });
 
-                        @Override
-                        public void onError(ObjectServerError error) {
-                            Log.d(TAG, "we fucked up i think");
-                        }
-                    });
-
-                    Log.d(TAG, input);
-                    Realm realm = Realm.getDefaultInstance();
-                    RealmResults<User> friend = realm.where(User.class)
-                            .equalTo(User.USER_ID, input)
-                            .findAll();
-                    if(friend.size() != 0){
-                        User friendUser = friend.first();
-                        RealmResults<LocationPing> Query = realm.where(LocationPing.class)
-                                .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
+                        RealmResults<User> friend = commonRealm.where(User.class)
+                                .equalTo(User.USER_ID, input)
                                 .findAll();
-                        LocationPing location = Query.first();
-                        realm.beginTransaction();
-                        location.getUsersThatCanViewThisLocationPing().add(friendUser);
+                        if(friend.size() != 0){
+                            final User friendUser = friend.first();
+                            RealmResults<LocationPing> Query = realm.where(LocationPing.class)
+                                    .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
+                                    .findAll();
+                            final LocationPing location = Query.first();
+                            realm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    location.getUsersThatCanViewThisLocationPing().add(friendUser.getId());
+                                    RealmQuery<UserLocationPingViewOptions> query = realm.where(UserLocationPingViewOptions.class);
 
-                        RealmQuery<UserLocationPingViewOptions> query = realm.where(UserLocationPingViewOptions.class);
+                                    UserLocationPingViewOptions userLocationPingViewOptions = realm.createObject(UserLocationPingViewOptions.class, query.count() + 1 );
+                                    userLocationPingViewOptions.setUserID(friendUser.getId());
+                                    userLocationPingViewOptions.setLocationPingID(location.getId());
 
-                        UserLocationPingViewOptions userLocationPingViewOptions = realm.createObject(UserLocationPingViewOptions.class, query.count() + 1 );
-                        userLocationPingViewOptions.setUserID(friendUser.getId());
-                        userLocationPingViewOptions.setLocationPingID(location.getId());
-
-                        RealmQuery<DayOptions> dayOptionsRealmQuery = realm.where(DayOptions.class);
-                        RealmList<DayOptions> dayOptionsArrayList = userLocationPingViewOptions.getDayOptionsArrayList();
-                        for(int i = 0; i < 7; i++){
-                            DayOptions dayOptions = realm.createObject(DayOptions.class, dayOptionsRealmQuery.count() + 1);
-                            dayOptions.setAMStart(false);
-                            dayOptions.setAMStop(false);
-                            dayOptions.setHourStart(0);
-                            dayOptions.setHourStop(0);
-                            dayOptions.setCanViewAllDay(true);
-                            dayOptionsArrayList.add(dayOptions);
+                                    RealmQuery<DayOptions> dayOptionsRealmQuery = realm.where(DayOptions.class);
+                                    RealmList<DayOptions> dayOptionsArrayList = userLocationPingViewOptions.getDayOptionsArrayList();
+                                    for(int i = 0; i < 7; i++){
+                                        DayOptions dayOptions = realm.createObject(DayOptions.class, dayOptionsRealmQuery.count() + 1);
+                                        dayOptions.setAMStart(false);
+                                        dayOptions.setAMStop(false);
+                                        dayOptions.setHourStart(0);
+                                        dayOptions.setHourStop(0);
+                                        dayOptions.setCanViewAllDay(true);
+                                        dayOptionsArrayList.add(dayOptions);
+                                    }
+                                }
+                            });
+                            Log.d(TAG, "User can view this now");
+                            Toast.makeText(getApplicationContext(), "Location Shared with " + friendUser.getDisplayName(), Toast.LENGTH_SHORT).show();
+                            onRestart();
+                        } else {
+                            Toast.makeText(getApplicationContext(), "User Does NOT Exist", Toast.LENGTH_SHORT).show();
                         }
-                        realm.commitTransaction();
-                        Log.d(TAG, "User can view this now");
-                        Toast.makeText(getApplicationContext(), "Location Shared with " + friendUser.getDisplayName(), Toast.LENGTH_SHORT).show();
-                        onRestart();
                     } else {
-                        Toast.makeText(getApplicationContext(), "User Does NOT Exist", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Input Blank", Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    Toast.makeText(getApplicationContext(), "Input Blank", Toast.LENGTH_SHORT).show();
+                } finally {
+                    realm.close();
                 }
+
             }
         });
 
@@ -178,37 +208,47 @@ public class LocationDetailsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Realm realm = Realm.getDefaultInstance();
+                try{
+                    // The Ping itself.
+                    RealmResults<LocationPing> locationPingsResults = realm.where(LocationPing.class)
+                            .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
+                            .findAll();
+                    final LocationPing locationPing = locationPingsResults.first();
 
-                // The Ping itself.
-                RealmResults<LocationPing> locationPingsResults = realm.where(LocationPing.class)
-                        .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
-                        .findAll();
-                LocationPing locationPing = locationPingsResults.first();
+                    //all view options for the specific ping
+                    final RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class)
+                            .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_LOCATION_ID, mlocationId)
+                            .findAll();
+                    realm.executeTransaction(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+                            // delete the ping itself;
+                            locationPing.deleteFromRealm();
 
-                //all view options for the specific ping
-                RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class)
-                        .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_LOCATION_ID, mlocationId)
-                        .findAll();
+                            // delete the view and dayOptions objects that are tied to the location ping.
+                            for(UserLocationPingViewOptions userLocationPingViewOptions : userLocationPingViewOptionsRealmResults){
+                                for(DayOptions dayOptions : userLocationPingViewOptions.getDayOptionsArrayList()){
+                                    dayOptions.deleteFromRealm();
+                                }
+                                userLocationPingViewOptions.deleteFromRealm();
+                            }
+                        }
+                    });
 
-                realm.beginTransaction();
-                // delete the ping itself;
-                locationPing.deleteFromRealm();
-
-                // delete the view and dayoptions objects that are tied to the location ping.
-                for(UserLocationPingViewOptions userLocationPingViewOptions : userLocationPingViewOptionsRealmResults){
-                    for(DayOptions dayOptions : userLocationPingViewOptions.getDayOptionsArrayList()){
-                        dayOptions.deleteFromRealm();
-                    }
-                    userLocationPingViewOptions.deleteFromRealm();
+                } finally {
+                    realm.close();
                 }
-                realm.commitTransaction();
-
-                realm.close();
 
                 finish();
             }
         });
 
+    }
+
+    @Override
+    public void onStop(){
+        super.onStop();
+        commonRealm.close();
     }
 
     public int getMlocationId() {

@@ -18,7 +18,7 @@ public class PrivateHobbySpot extends Application {
 
     public static final String AUTH_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/auth";
     public static final String REALM_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/~/PHS";
-
+    public static final String COMMON_URL = "http://" + BuildConfig.OBJECT_SERVER_IP + ":9080/PHS_Common";
     @Override
     public void onCreate(){
         super.onCreate();

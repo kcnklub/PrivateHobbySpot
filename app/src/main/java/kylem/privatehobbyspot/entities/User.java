@@ -15,32 +15,25 @@ public class User extends RealmObject implements Serializable{
 
     public static final String USER_ID = "Id";
     public static final String USER_DISPLAY_NAME = "displayName";
-    public static final String USER_LOCATION_PINGS = "locationPings";
+    public static final String USER_REALM_URL = "personalRealmUrl";
 
     @PrimaryKey
     private String Id;
 
     private String displayName;
 
-    private RealmList<LocationPing> locationPings;
+    private String personalRealmUrl;
+
+    private RealmList<String> sharedRealmUrls;
 
     public User(){
-
     }
 
-    public User(String n_displayName, String n_id){
-
+    public User(String n_displayName, String n_id, String realmUrl){
         displayName = n_displayName;
         Id = n_id;
-        locationPings = new RealmList<LocationPing>();
-    }
-
-    public RealmList<LocationPing> getLocationPings() {
-        return locationPings;
-    }
-
-    public void setLocationPings(RealmList<LocationPing> locationPings) {
-        this.locationPings = locationPings;
+        personalRealmUrl = realmUrl;
+        sharedRealmUrls = new RealmList<>();
     }
 
     public String getDisplayName() {
@@ -59,4 +52,19 @@ public class User extends RealmObject implements Serializable{
         this.Id = id;
     }
 
+    public String getPersonalRealmUrl() {
+        return personalRealmUrl;
+    }
+
+    public void setPersonalRealmUrl(String personalRealmUrl) {
+        this.personalRealmUrl = personalRealmUrl;
+    }
+
+    public RealmList<String> getSharedRealmUrls() {
+        return sharedRealmUrls;
+    }
+
+    public void setSharedRealmUrls(RealmList<String> sharedRealmUrls) {
+        this.sharedRealmUrls = sharedRealmUrls;
+    }
 }

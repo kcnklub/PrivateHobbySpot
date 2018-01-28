@@ -21,10 +21,13 @@ import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.SignInButton;
 
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
+import io.realm.SyncConfiguration;
 import io.realm.SyncCredentials;
 import io.realm.ObjectServerError;
 import io.realm.SyncUser;
+import io.realm.annotations.RealmModule;
 import kylem.privatehobbyspot.auth.facebook.FacebookAuth;
 import kylem.privatehobbyspot.auth.google.GoogleAuth;
 import kylem.privatehobbyspot.entities.User;
@@ -182,7 +185,11 @@ public class RegisterActivity extends AppCompatActivity implements SyncUser.Call
 
     private void registrationComplete(final SyncUser user) {
         UserManager.setActiveUser(user);
-        Realm realm = Realm.getDefaultInstance();
+        @RealmModule(classes = {User.class}) class NewModule {}
+        SyncConfiguration configuration = new SyncConfiguration.Builder(user, PrivateHobbySpot.COMMON_URL)
+                .modules(new NewModule())
+                .build();
+        Realm realm = Realm.getInstance(configuration);
         try{
             RealmResults<User> checkUser = realm.where(User.class).equalTo(User.USER_DISPLAY_NAME, userProviderId).findAll();
             if(checkUser.isEmpty()){

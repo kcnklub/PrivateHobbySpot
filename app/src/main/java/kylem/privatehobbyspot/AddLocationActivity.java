@@ -12,6 +12,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import io.realm.SyncConfiguration;
 import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
@@ -53,12 +54,6 @@ public class AddLocationActivity extends AppCompatActivity {
                             ping.setDescription(description.getText().toString());
                             ping.setLatitude(latLngToAdd.latitude);
                             ping.setLongtitude(latLngToAdd.longitude);
-
-                            //Link to user.
-                            User user = realm.where(User.class).equalTo(User.USER_ID, SyncUser.currentUser().getIdentity()).findAll().first();
-                            user.getLocationPings().add(ping);
-
-
                         }
                     });
                 } finally {
