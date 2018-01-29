@@ -17,9 +17,12 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import io.realm.SyncConfiguration;
+import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
 import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
+import kylem.privatehobbyspot.modules.commonModule;
 
 /**
  * Created by kylem on 12/31/2017.
@@ -61,13 +64,9 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
             holder = (UserHolder)row.getTag();
         }
 
-        User user = data.get(position);
+        final User user = data.get(position);
         holder.userEmail.setText(user.getDisplayName());
-
-        Realm realm = Realm.getDefaultInstance();
-        final User userObj = realm.where(User.class).equalTo(User.USER_ID, user.getId()).findAll().first();
-        realm.close();
-        holder.userDisplayName.setText(userObj.getDisplayName());
+        holder.userDisplayName.setText(user.getDisplayName());
         holder.unshareButton.setOnClickListener(new View.OnClickListener(){
             @SuppressLint("LongLogTag")
             @Override
@@ -77,16 +76,14 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
 
                 if(locationDetailsActivity != null){
                     RealmResults<LocationPing> location = realm.where(LocationPing.class).equalTo(LocationPing.LOCATION_PING_ID, locationDetailsActivity.getMlocationId()).findAll();
-                    RealmResults<User> user = realm.where(User.class).equalTo(User.USER_ID, userObj.getId()).findAll();
-                    User userUnshare = user.first();
                     LocationPing ping = location.first();
                     realm.beginTransaction();
                     if(ping.getUsersThatCanViewThisLocationPing() != null){
-                        ping.getUsersThatCanViewThisLocationPing().remove(userUnshare);
+                        ping.getUsersThatCanViewThisLocationPing().remove(user);
                     }
 
                     RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class)
-                            .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_USER_ID, userUnshare.getId())
+                            .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_USER_ID, user.getId())
                             .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_LOCATION_ID, ping.getId())
                             .findAll();
 
@@ -109,7 +106,7 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
                 // start the user options activity.
                 Intent intent = new Intent((LocationDetailsActivity) context, UserViewOptionsActivity.class);
                 intent.putExtra("LocationID", ((LocationDetailsActivity) context).getMlocationId());
-                intent.putExtra("userEmail", userObj.getId());
+                intent.putExtra("userID", user.getId());
                 ((LocationDetailsActivity) context).startActivity(intent);
             }
         });

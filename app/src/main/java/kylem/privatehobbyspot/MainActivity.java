@@ -52,6 +52,7 @@ import io.realm.SyncUser;
 import io.realm.permissions.Permission;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
+import kylem.privatehobbyspot.modules.commonModule;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback,
@@ -141,8 +142,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         settingsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
+                //Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                //startActivity(intent);
+
+                //Testing the Common Realm
+                SyncConfiguration configuration = new SyncConfiguration
+                        .Builder(SyncUser.currentUser(), PrivateHobbySpot.COMMON_URL)
+                        .modules(new commonModule())
+                        .build();
+                Realm realm = Realm.getInstance(configuration);
+                long count = realm.where(User.class).count();
+                Toast.makeText(MainActivity.this, String.valueOf(count), Toast.LENGTH_SHORT).show();
+
             }
         });
 
@@ -264,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             mMap.setOnMarkerDragListener(this);
             mMap.setOnMarkerClickListener(this);
         }
-        //getUserLocationPings();
+        getUserLocationPings();
 
 
     }
@@ -291,11 +302,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         for (LocationPing location : userLocations) {
             if (location.getMarkerId() == markerId) {
                 Realm realm = Realm.getDefaultInstance();
-                RealmResults<User> userCreated = realm.where(User.class).equalTo("Id", user.getIdentity()).findAll();
-                User user = userCreated.first();
-                boolean isUserCreator = location.getCreatedByUser().equals(user.getId());
+                boolean isUserCreator = location.getCreatedByUser().equals(SyncUser.currentUser().getIdentity());
                 Log.d(TAG, location.getCreatedByUser());
-                Log.d(TAG, user.getId());
                 Log.d(TAG, String.valueOf(isUserCreator));
                 Intent intent = new Intent(this, LocationDetailsActivity.class);
                 intent.putExtra("locationID", location.getId());
@@ -426,31 +434,25 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         isLookingAtMap = lookingAtMap;
     }
 
-    /*public void getUserLocationPings() {
+    public void getUserLocationPings() {
         //making sure to empty the arraylist before adding the data to it.
-
-        /*userLocations = new ArrayList<LocationPing>();
+        userLocations = new ArrayList<LocationPing>();
         Realm realm = Realm.getDefaultInstance();
-        RealmQuery<User> query = realm.where(User.class);
-        query.equalTo("Id", user.getIdentity());
-        RealmResults<User> user = query.findAll();
-        if (user.size() == 1) {
-            User currentUser = user.first();
-            RealmList<LocationPing> userSavedLocations = currentUser.getLocationPings();
-            Log.d(TAG, "Number of Locations: " + (String.valueOf(userSavedLocations.size())));
-            if (userSavedLocations.size() != 0) {
-                for (LocationPing location : userSavedLocations) {
-                    String markerId = mMap.addMarker(new MarkerOptions()
-                            .draggable(false)
-                            .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
-                            .title(location.GetName())
-                    ).getId();
-                    markerId = markerId.substring(1);
-                    int n_markerId = Integer.valueOf(markerId);
-                    location.setMarkerId(n_markerId);
-                    userLocations.add(location);
-                }
+        RealmQuery<LocationPing> query = realm.where(LocationPing.class);
+        RealmResults<LocationPing> Locations = query.findAll();
+        if (Locations.size() != 0) {
+            Log.d(TAG, "Number of Locations: " + (String.valueOf(Locations.size())));
+            for (LocationPing location : Locations) {
+                String markerId = mMap.addMarker(new MarkerOptions()
+                        .draggable(false)
+                        .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
+                        .title(location.GetName())
+                ).getId();
+                markerId = markerId.substring(1);
+                int n_markerId = Integer.valueOf(markerId);
+                location.setMarkerId(n_markerId);
+                userLocations.add(location);
             }
         }
-    } */
+    }
 }

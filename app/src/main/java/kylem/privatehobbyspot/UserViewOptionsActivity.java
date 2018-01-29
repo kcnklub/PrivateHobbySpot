@@ -9,13 +9,17 @@ import java.util.ArrayList;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import io.realm.SyncConfiguration;
+import io.realm.SyncUser;
 import kylem.privatehobbyspot.entities.DayOptions;
 import kylem.privatehobbyspot.entities.User;
 import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
+import kylem.privatehobbyspot.modules.commonModule;
 
 public class UserViewOptionsActivity extends AppCompatActivity {
 
-    private String userEmail;
+    private String userID;
+    private String userDisplayName;
     private int locationID;
     private ListView days;
 
@@ -24,17 +28,12 @@ public class UserViewOptionsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_view_options);
 
-        userEmail = getIntent().getStringExtra("userEmail");
+        userID = getIntent().getStringExtra("UserID");
         locationID = getIntent().getIntExtra("LocationID", -1);
 
         Realm realm = Realm.getDefaultInstance();
-
-        RealmResults<User> user = realm.where(User.class).equalTo("Id", userEmail).findAll();
-        User userInQuestion = user.first();
-
-
         RealmResults<UserLocationPingViewOptions> userLocationPingViewOptions = realm.where(UserLocationPingViewOptions.class)
-                .equalTo("UserID", userInQuestion.getId())
+                .equalTo("UserID", userID)
                 .equalTo("LocationPingID", locationID)
                 .findAll();
 

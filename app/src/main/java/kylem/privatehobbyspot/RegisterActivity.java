@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -27,15 +28,17 @@ import io.realm.SyncConfiguration;
 import io.realm.SyncCredentials;
 import io.realm.ObjectServerError;
 import io.realm.SyncUser;
-import io.realm.annotations.RealmModule;
 import kylem.privatehobbyspot.auth.facebook.FacebookAuth;
 import kylem.privatehobbyspot.auth.google.GoogleAuth;
 import kylem.privatehobbyspot.entities.User;
+import kylem.privatehobbyspot.modules.commonModule;
 
 import static android.text.TextUtils.isEmpty;
 import static kylem.privatehobbyspot.PrivateHobbySpot.AUTH_URL;
 
 public class RegisterActivity extends AppCompatActivity implements SyncUser.Callback<SyncUser> {
+
+    private final static String TAG = "Register Activity";
 
     private AutoCompleteTextView usernameView;
     private EditText passwordView;
@@ -185,9 +188,10 @@ public class RegisterActivity extends AppCompatActivity implements SyncUser.Call
 
     private void registrationComplete(final SyncUser user) {
         UserManager.setActiveUser(user);
-        @RealmModule(classes = {User.class}) class NewModule {}
-        SyncConfiguration configuration = new SyncConfiguration.Builder(user, PrivateHobbySpot.COMMON_URL)
-                .modules(new NewModule())
+        Log.d(TAG, "Building the Sync Config");
+        SyncConfiguration configuration = new SyncConfiguration
+                .Builder(user, PrivateHobbySpot.COMMON_URL)
+                .modules(new commonModule())
                 .build();
         Realm realm = Realm.getInstance(configuration);
         try{
@@ -198,6 +202,7 @@ public class RegisterActivity extends AppCompatActivity implements SyncUser.Call
                     public void execute(Realm realm) {
                         User savedUser = realm.createObject(User.class, user.getIdentity());
                         savedUser.setDisplayName(userProviderId);
+                        Log.d(TAG, "We in it");
                     }
                 });
 

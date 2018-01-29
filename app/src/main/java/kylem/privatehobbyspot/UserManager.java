@@ -17,6 +17,7 @@ import kylem.privatehobbyspot.entities.DayOptions;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
 import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
+import kylem.privatehobbyspot.modules.personalModule;
 
 /**
  * Created by kylem on 1/18/2018.
@@ -56,29 +57,10 @@ public class UserManager {
     }
 
     public static void setActiveUser(SyncUser user){
-
-        PermissionManager pm = user.getPermissionManager();
-
-        UserCondition condition = UserCondition.userId(user.getIdentity());
-        AccessLevel accessLevel = AccessLevel.WRITE;
-        PermissionRequest request = new PermissionRequest(condition, PrivateHobbySpot.COMMON_URL, accessLevel);
-
-        pm.applyPermissions(request, new PermissionManager.ApplyPermissionsCallback() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "we got it shared");
-            }
-
-            @Override
-            public void onError(ObjectServerError error) {
-                Log.d(TAG, "we fucked up i think");
-            }
-        });
-
         //set the default realm to the user personal realm. when the common realm needs to be referenced will declare it then.
-        @RealmModule(classes = {LocationPing.class, UserLocationPingViewOptions.class, DayOptions.class}) class personalModule {}
-
-        SyncConfiguration defaultConfig = new SyncConfiguration.Builder(user, PrivateHobbySpot.REALM_URL)
+        Log.d(TAG, "after Permissions and before building sync config");
+        SyncConfiguration defaultConfig = new SyncConfiguration
+                .Builder(user, PrivateHobbySpot.REALM_URL)
                 .modules(new personalModule())
                 .build();
         Realm.setDefaultConfiguration(defaultConfig);

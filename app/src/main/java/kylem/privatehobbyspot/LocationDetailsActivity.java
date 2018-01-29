@@ -129,37 +129,43 @@ public class LocationDetailsActivity extends AppCompatActivity {
                 try {
                     if(!input.equals("")){
 
-                        //give the user that the location is being shared with and give them permission to view this user's realm.
-                        SyncUser user = SyncUser.currentUser();
-                        PermissionManager pm = user.getPermissionManager();
-                        UserCondition condition = UserCondition.username(input);
-                        AccessLevel accessLevel = AccessLevel.READ;
-                        PermissionRequest request = new PermissionRequest(condition, PrivateHobbySpot.REALM_URL, accessLevel);
-                        pm.applyPermissions(request, new PermissionManager.ApplyPermissionsCallback() {
-                            @Override
-                            public void onSuccess() {
-                                Log.d(TAG, "we got it shared");
-                            }
-
-                            @Override
-                            public void onError(ObjectServerError error) {
-                                Log.d(TAG, "we fucked up i think");
-                            }
-                        });
-
-                        // add the url to this users realm to the user that this location is being shared with.
-                        final User shareUser = commonRealm.where(User.class).equalTo(User.USER_DISPLAY_NAME, input).findFirst();
-                        commonRealm.executeTransaction(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                shareUser.getSharedRealmUrls().add("/" + SyncUser.currentUser().getIdentity() + "/PHS");
-                            }
-                        });
-
                         RealmResults<User> friend = commonRealm.where(User.class)
-                                .equalTo(User.USER_ID, input)
+                                .equalTo(User.USER_DISPLAY_NAME, input)
                                 .findAll();
                         if(friend.size() != 0){
+
+                            //give the user that the location is being shared with and give them permission to view this user's realm.
+                            SyncUser user = SyncUser.currentUser();
+                            PermissionManager pm = user.getPermissionManager();
+                            UserCondition condition = UserCondition.username(input);
+                            AccessLevel accessLevel = AccessLevel.READ;
+                            PermissionRequest request = new PermissionRequest(condition, PrivateHobbySpot.REALM_URL, accessLevel);
+                            pm.applyPermissions(request, new PermissionManager.ApplyPermissionsCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Log.d(TAG, "we got it shared");
+                                }
+
+                                @Override
+                                public void onError(ObjectServerError error) {
+                                    Log.d(TAG, "we fucked up i think");
+                                }
+                            });
+
+                            // add the url to this users realm to the user that this location is being shared with.
+                            final User shareUser = commonRealm.where(User.class).equalTo(User.USER_DISPLAY_NAME, input).findFirst();
+                            commonRealm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    if(shareUser.getSharedRealmUrls() == null){
+                                        shareUser.setSharedRealmUrls(new RealmList<String>());
+                                        shareUser.getSharedRealmUrls().add("/" + SyncUser.currentUser().getIdentity() + "/PHS");
+                                    } else {
+                                        shareUser.getSharedRealmUrls().add("/" + SyncUser.currentUser().getIdentity() + "/PHS");
+                                    }
+                                }
+                            });
+
                             final User friendUser = friend.first();
                             RealmResults<LocationPing> Query = realm.where(LocationPing.class)
                                     .equalTo(LocationPing.LOCATION_PING_ID, mlocationId)
