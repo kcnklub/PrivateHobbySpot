@@ -19,6 +19,8 @@ public class DayOptions extends RealmObject{
     @PrimaryKey
     private int id;
 
+    private boolean canView;
+
     private boolean canViewAllDay;
 
     private int hourStart;
@@ -35,6 +37,22 @@ public class DayOptions extends RealmObject{
         isAMStart = IsAMStart;
         hourStop = HourStop;
         isAMStop = IsAMStop;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public boolean isCanView() {
+        return canView;
+    }
+
+    public void setCanView(boolean canView) {
+        this.canView = canView;
     }
 
     public boolean isCanViewAllDay() {

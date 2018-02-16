@@ -254,7 +254,7 @@ public class LocationDetailsActivity extends AppCompatActivity {
     @Override
     public void onStop(){
         super.onStop();
-        commonRealm.close();
+        //commonRealm.close();
     }
 
     public int getMlocationId() {

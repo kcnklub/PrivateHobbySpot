@@ -3,6 +3,7 @@ package kylem.privatehobbyspot;
 import android.app.Activity;
 import android.content.Context;
 import android.text.Layout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +23,8 @@ import kylem.privatehobbyspot.entities.DayOptions;
  */
 
 public class DaysOfTheWeekSettingsAdapter extends ArrayAdapter<DayOptions> {
+
+    private final static String TAG = "DOTW ADAPTER";
 
     Context context;
     int layoutResourceID;
@@ -49,10 +52,8 @@ public class DaysOfTheWeekSettingsAdapter extends ArrayAdapter<DayOptions> {
             holder.dayOfTheWeek = (TextView)row.findViewById(R.id.dayOfTheWeek);
             holder.canViewSwitch = (Switch)row.findViewById(R.id.CanView);
             holder.canViewAllDayCheckbox = (CheckBox)row.findViewById(R.id.allDayCheckBox);
-            holder.startingHour = (TextView)row.findViewById(R.id.startingHour);
-            holder.stoppingHour = (TextView)row.findViewById(R.id.stoppingHour);
-            holder.setStartingHourButton = (Button)row.findViewById(R.id.setStartingHourButton);
-            holder.setStoppingHourButton = (Button)row.findViewById(R.id.setStoppingHourButton);
+            holder.startingHour = (TextView)row.findViewById(R.id.starting_hour);
+            holder.stoppingHour = (TextView)row.findViewById(R.id.stopping_hour);
 
             row.setTag(holder);
         } else {
@@ -61,6 +62,8 @@ public class DaysOfTheWeekSettingsAdapter extends ArrayAdapter<DayOptions> {
 
         final DayOptions dayOptions = data.get(position);
 
+        holder.canViewSwitch.setChecked(dayOptions.isCanView());
+        holder.canViewSwitch.setClickable(false);
         switch(position){
             case 0:
                 holder.dayOfTheWeek.setText("Monday");
@@ -85,51 +88,16 @@ public class DaysOfTheWeekSettingsAdapter extends ArrayAdapter<DayOptions> {
         }
 
         holder.canViewAllDayCheckbox.setChecked(dayOptions.isCanViewAllDay());
+        holder.canViewAllDayCheckbox.setClickable(false);
         if(dayOptions.isCanViewAllDay()){
-            holder.startingHour.setVisibility(View.INVISIBLE);
-            holder.stoppingHour.setVisibility(View.INVISIBLE);
-            holder.setStartingHourButton.setVisibility(View.INVISIBLE);
-            holder.setStoppingHourButton.setVisibility(View.INVISIBLE);
+            holder.startingHour.setVisibility(View.GONE);
+            holder.stoppingHour.setVisibility(View.GONE);
         } else {
-            holder.startingHour.setText(dayOptions.getHourStart());
-            holder.stoppingHour.setText(dayOptions.getHourStop());
-
+            String temp = String.valueOf(dayOptions.getHourStart()) + (dayOptions.isAMStart() ? "AM" : "PM");
+            holder.startingHour.setText(temp);
+            temp = String.valueOf(dayOptions.getHourStop()) + (dayOptions.isAMStop() ? "AM" : "PM");
+            holder.stoppingHour.setText(temp);
         }
-
-        holder.canViewAllDayCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked){
-                    // your code for checked checkbox
-                    holder.startingHour.setVisibility(View.INVISIBLE);
-                    holder.stoppingHour.setVisibility(View.INVISIBLE);
-                    holder.setStartingHourButton.setVisibility(View.INVISIBLE);
-                    holder.setStoppingHourButton.setVisibility(View.INVISIBLE);
-
-                } else {
-                    // your code to no checked checkbox
-                    holder.startingHour.setText(dayOptions.getHourStart());
-                    holder.stoppingHour.setText(dayOptions.getHourStop());
-                }
-            }
-        });
-
-        holder.setStartingHourButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
-
-        holder.setStoppingHourButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-            }
-        });
-
-
-        //LayoutInflater inflater = (TextView)row.findViewById();
         return row;
     }
 
@@ -139,12 +107,5 @@ public class DaysOfTheWeekSettingsAdapter extends ArrayAdapter<DayOptions> {
         CheckBox canViewAllDayCheckbox;
         TextView startingHour;
         TextView stoppingHour;
-        Button setStartingHourButton;
-        Button setStoppingHourButton;
     }
-
-    public void onCheckBoxClicked(View view){
-
-    }
-
 }

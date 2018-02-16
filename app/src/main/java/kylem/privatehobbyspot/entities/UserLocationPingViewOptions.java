@@ -30,6 +30,8 @@ public class UserLocationPingViewOptions extends RealmObject {
 
     private int LocationPingID;
 
+    private int locationMarkerID;
+
     private RealmList<DayOptions> dayOptionsArrayList = null;
 
     public UserLocationPingViewOptions(){}
@@ -58,6 +60,14 @@ public class UserLocationPingViewOptions extends RealmObject {
 
     public void setLocationPingID(int locationPingID) {
         LocationPingID = locationPingID;
+    }
+
+    public int getLocationMarkerID() {
+        return locationMarkerID;
+    }
+
+    public void setLocationMarkerID(int locationMarkerID) {
+        this.locationMarkerID = locationMarkerID;
     }
 
     public RealmList<DayOptions> getDayOptionsArrayList() {

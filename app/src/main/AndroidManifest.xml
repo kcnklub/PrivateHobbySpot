@@ -76,7 +76,8 @@
         <activity
             android:name="com.facebook.FacebookActivity"
             android:label="@string/app_name" />
-        <activity android:name=".AddLocationActivity"></activity>
+        <activity android:name=".AddLocationActivity" />
+        <activity android:name=".SingleDaySettingActivity"></activity>
     </application>
 
 </manifest>

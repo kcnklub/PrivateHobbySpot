@@ -43,6 +43,7 @@ import io.realm.ObjectServerError;
 import io.realm.PermissionManager;
 import io.realm.Realm;
 import io.realm.RealmAsyncTask;
+import io.realm.RealmChangeListener;
 import io.realm.RealmConfiguration;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
@@ -52,7 +53,9 @@ import io.realm.SyncUser;
 import io.realm.permissions.Permission;
 import kylem.privatehobbyspot.entities.LocationPing;
 import kylem.privatehobbyspot.entities.User;
+import kylem.privatehobbyspot.entities.UserLocationPingViewOptions;
 import kylem.privatehobbyspot.modules.commonModule;
+import kylem.privatehobbyspot.modules.personalModule;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, OnMapReadyCallback,
@@ -90,6 +93,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private Marker newLocationMarker;
 
     public ArrayList<LocationPing> userLocations;
+    public ArrayList<UserLocationPingViewOptions> sharedLocations;
 
     private SyncUser user;
 
@@ -204,6 +208,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         });
 
+        PermissionManager pm = SyncUser.currentUser().getPermissionManager();
+
+        pm.getPermissions(new PermissionManager.PermissionsCallback() {
+            @Override
+            public void onSuccess(RealmResults<Permission> permissions) {
+                Permission p = permissions.where().equalTo("path", PrivateHobbySpot.URL_BASE + "/7e757a15d6bb7c5b2369463071e4eca1/PHS").findFirst();
+
+                permissions.addChangeListener(new RealmChangeListener<RealmResults<Permission>>() {
+                    @Override
+                    public void onChange(RealmResults<Permission> permissions) {
+                        Log.d(TAG, "WE GOT PERMS");
+                    }
+                });
+            }
+
+            @Override
+            public void onError(ObjectServerError error) {
+                Log.d(TAG, "for some reason we do not have perms");
+            }
+        });
+
     }
 
     @Override
@@ -314,6 +339,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 startActivity(intent);
             }
         }
+
+        for(UserLocationPingViewOptions shareLocation : sharedLocations){
+            if(shareLocation.getLocationMarkerID() == markerId){
+            }
+        }
+
         return true;
     }
 
@@ -437,22 +468,95 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     public void getUserLocationPings() {
         //making sure to empty the arraylist before adding the data to it.
         userLocations = new ArrayList<LocationPing>();
-        Realm realm = Realm.getDefaultInstance();
-        RealmQuery<LocationPing> query = realm.where(LocationPing.class);
-        RealmResults<LocationPing> Locations = query.findAll();
-        if (Locations.size() != 0) {
-            Log.d(TAG, "Number of Locations: " + (String.valueOf(Locations.size())));
-            for (LocationPing location : Locations) {
-                String markerId = mMap.addMarker(new MarkerOptions()
-                        .draggable(false)
-                        .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
-                        .title(location.GetName())
-                ).getId();
-                markerId = markerId.substring(1);
-                int n_markerId = Integer.valueOf(markerId);
-                location.setMarkerId(n_markerId);
-                userLocations.add(location);
+        sharedLocations = new ArrayList<UserLocationPingViewOptions>();
+
+        SyncConfiguration config = new SyncConfiguration.Builder(SyncUser.currentUser(), PrivateHobbySpot.REALM_URL)
+                .modules(new personalModule())
+                .build();
+
+        RealmAsyncTask realmAsyncTask = Realm.getInstanceAsync(config, new Realm.Callback() {
+            @Override
+            public void onSuccess(Realm realm) {
+                Log.d(TAG, "personal pings success");
+                RealmQuery<LocationPing> query = realm.where(LocationPing.class);
+                RealmResults<LocationPing> Locations = query.findAll();
+                Log.d(TAG, String.valueOf(Locations.size()));
+                if (Locations.size() != 0) {
+                    Log.d(TAG, "Number of Locations: " + (String.valueOf(Locations.size())));
+                    for (LocationPing location : Locations) {
+                        String markerId = mMap.addMarker(new MarkerOptions()
+                                .draggable(false)
+                                .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
+                                .title(location.GetName())
+                        ).getId();
+                        markerId = markerId.substring(1);
+                        int n_markerId = Integer.valueOf(markerId);
+                        location.setMarkerId(n_markerId);
+                        userLocations.add(location);
+                    }
+                }
             }
-        }
+        });
+
+        SyncConfiguration configuration = new SyncConfiguration
+                .Builder(SyncUser.currentUser(), PrivateHobbySpot.COMMON_URL)
+                .modules(new commonModule())
+                .build();
+
+        Log.d(TAG, SyncUser.currentUser().getIdentity());
+        RealmAsyncTask commonRealm = Realm.getInstanceAsync(configuration, new Realm.Callback() {
+            @Override
+            public void onSuccess(Realm realm) {
+                User user = realm.where(User.class).equalTo(User.USER_ID, SyncUser.currentUser().getIdentity()).findFirst();
+                Log.d(TAG, user.getDisplayName());
+                for(String url: user.getSharedRealmUrls()){
+                    Log.d(TAG, url);
+                    SyncConfiguration config = new SyncConfiguration
+                            .Builder(SyncUser.currentUser(), PrivateHobbySpot.URL_BASE + url)
+                            .modules(new personalModule())
+                            .build();
+                    RealmAsyncTask otherRealm = Realm.getInstanceAsync(config, new Realm.Callback() {
+                        @Override
+                        public void onSuccess(Realm realm) {
+                            RealmResults<UserLocationPingViewOptions> locationViewOptions = realm
+                                    .where(UserLocationPingViewOptions.class)
+                                    .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_USER_ID, SyncUser.currentUser().getIdentity())
+                                    .findAll();
+
+                            for(UserLocationPingViewOptions viewOptions : locationViewOptions){
+                                LocationPing location = realm.where(LocationPing.class).equalTo(LocationPing.LOCATION_PING_ID, viewOptions.getLocationPingID()).findFirst();
+                                    Log.d(TAG, location.GetName());
+                                    String markedId = mMap.addMarker(new MarkerOptions()
+                                            .draggable(false)
+                                            .position(new LatLng(location.GetLatitude(), location.GetLongtitude()))
+                                            .title(location.GetName())
+                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+                                    ).getId();
+                                    markedId = markedId.substring(1);
+                                    int n_markerId = Integer.valueOf(markedId);
+                                    realm.beginTransaction();
+                                    viewOptions.setLocationMarkerID(n_markerId);
+                                    realm.commitTransaction();
+                                    sharedLocations.add(viewOptions);
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable error){
+                            Log.d(TAG, error.getMessage());
+                        }
+                    });
+
+                }
+            }
+
+            @Override
+            public void onError(Throwable error){
+                Log.d(TAG, error.getMessage());
+            }
+
+        });
     }
 }
+
+

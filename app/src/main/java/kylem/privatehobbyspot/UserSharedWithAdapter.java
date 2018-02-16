@@ -73,7 +73,6 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
             public void onClick(View arg0){
                 Realm realm = Realm.getDefaultInstance();
                 LocationDetailsActivity locationDetailsActivity = (LocationDetailsActivity) context;
-
                 if(locationDetailsActivity != null){
                     RealmResults<LocationPing> location = realm.where(LocationPing.class).equalTo(LocationPing.LOCATION_PING_ID, locationDetailsActivity.getMlocationId()).findAll();
                     LocationPing ping = location.first();
@@ -81,7 +80,6 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
                     if(ping.getUsersThatCanViewThisLocationPing() != null){
                         ping.getUsersThatCanViewThisLocationPing().remove(user);
                     }
-
                     RealmResults<UserLocationPingViewOptions> userLocationPingViewOptionsRealmResults = realm.where(UserLocationPingViewOptions.class)
                             .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_USER_ID, user.getId())
                             .equalTo(UserLocationPingViewOptions.VIEW_OPTIONS_LOCATION_ID, ping.getId())
@@ -96,7 +94,6 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
                 } else{
                     Toast.makeText(context, "location details null", Toast.LENGTH_SHORT).show();
                 }
-
             }
         });
 
@@ -107,12 +104,11 @@ public class UserSharedWithAdapter extends ArrayAdapter<User>{
                 Intent intent = new Intent((LocationDetailsActivity) context, UserViewOptionsActivity.class);
                 intent.putExtra("LocationID", ((LocationDetailsActivity) context).getMlocationId());
                 intent.putExtra("userID", user.getId());
+                intent.putExtra("userDisplayName", user.getDisplayName());
                 ((LocationDetailsActivity) context).startActivity(intent);
             }
         });
-
         return row;
-
     }
 
     static class UserHolder {

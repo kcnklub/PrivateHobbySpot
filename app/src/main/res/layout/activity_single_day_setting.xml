@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="kylem.privatehobbyspot.SingleDaySettingActivity">
+
+    <TextView
+        android:id="@+id/day_of_the_week"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:paddingTop="@dimen/activity_vertical_margin"/>
+
+    <Switch
+        android:id="@+id/can_view_setting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Can View"
+        android:textSize="18sp"
+        android:paddingTop="@dimen/activity_vertical_margin"/>
+
+    <Switch
+        android:id="@+id/can_view_all_day_setting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Can View All Day"
+        android:textSize="18sp"
+        android:paddingTop="@dimen/activity_vertical_margin"/>
+
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/activity_vertical_margin">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/new_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="New Start Time Hour" />
+
+            <Switch
+                android:id="@+id/starting_am_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="AM"
+                android:textAllCaps="false" />
+
+            <TextView
+                android:id="@+id/hour_start_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="12PM" />
+        </LinearLayout>
+
+    </android.support.design.widget.TextInputLayout>
+
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/activity_vertical_margin">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/new_stop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="New Stop Time Hour" />
+
+            <Switch
+                android:id="@+id/stopping_am_switch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="AM"
+                android:textAllCaps="false" />
+
+            <TextView
+                android:id="@+id/hour_stop_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="4PM" />
+        </LinearLayout>
+
+    </android.support.design.widget.TextInputLayout>
+
+    <Button
+        android:id="@+id/save_confirm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="save"
+        android:paddingTop="@dimen/activity_vertical_margin"/>
+
+</LinearLayout>
